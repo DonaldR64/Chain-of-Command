@@ -1349,6 +1349,51 @@ const CoC = (() => {
 	    return surname	
 	}
 
+    const ClearState = () => {
+        //clear arrays
+        ModelArray = {};
+        TeamArray = {};
+        SectionArray = {};
+        //clear token info
+        let tokens = findObjs({
+            _pageid: Campaign().get("playerpageid"),
+            _type: "graphic",
+            _subtype: "token",
+            layer: "objects",
+        })
+        tokens.forEach((token) => {
+            if (token.get("name").includes("Objective") === true) {return};
+            token.set({
+                name: "",
+                tint_color: "transparent",
+                aura1_color: "transparent",
+                aura1_radius: 0,
+                showplayers_bar1: true,
+                showname: true,
+                showplayers_aura1: true,
+                bar1_value: 0,
+                bar1_max: "",
+                gmnotes: "",
+                statusmarkers: "",
+            });                
+        })
+
+        RemoveDead("All");
+
+        state.CoC = {
+            nations: [[],[]],
+            players: {},
+            playerInfo: [[],[]],
+            markers: [[],[]],
+            lineArray: [],
+            forceMorale: [0,0],
+            CoCPoints: [0,0],
+            commandDice: [5,5],
+            unitnumbers: [[0],[0]],
+        }
+        sendChat("","Cleared State/Arrays");
+    }
+
 
 
 
