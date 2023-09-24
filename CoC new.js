@@ -491,7 +491,16 @@ const CoC = (() => {
             if (this.modelIDs.includes(model.id) === false) {
                 this.modelIDs.push(model.id);
             }
-            //sort??
+        }
+
+        leader() {
+            //sort team, 0 indexed token gets aura
+            let leader = ModelArray[this.modelIDs[0]];
+            leader.token.set({
+                aura1_color: colours.green,
+                aura1_radius: 0.1,
+                showplayers_aura1: true,
+            })
         }
 
         remove(model) {
@@ -540,8 +549,7 @@ const CoC = (() => {
                 special = " ";
             }
 
-    
-            rank = parseInt(attributeArray.rank);
+            let rank = parseInt(attributeArray.rank);
             let name;
             if (existing === false) {
                 name = Naming(char.get("name"),rank,faction);
@@ -559,7 +567,7 @@ const CoC = (() => {
             this.sectionID = sectionID;
             this.type = type;
             this.hex = hex;
-            this.hexLabel = label;
+            this.hexLabel = hexLabel;
             this.rank = rank;
             this.size = size;
             this.radius = radius;
@@ -1215,18 +1223,18 @@ const CoC = (() => {
             let info = decodeURIComponent(token.get("gmnotes")).toString();
             if (!info) {return};
             info = info.split(";");
-            let player = info[0];
-            let sectionName = info[1];
-            let sectionID = info[2];
+            let player = (Allies.includes(nation)) ? 0:1;
+            let sectionName = info[0];
+            let sectionID = info[1];
             let section = SectionArray[sectionID];
-            let teamName = info[3];
-            let teamID = info[4];
+            let teamName = info[2];
+            let teamID = info[3];
             let team = TeamArray[teamID];
             if (!section) {
                 section = new Section(player,nation,sectionID,sectionName);
             }
             if (!team) {
-                team = new TeamArray(player,nation,teamID,teamName,section.id);
+                team = new Team(player,nation,teamID,teamName,sectionID);
                 let markers = token.get("statusmarkers");
                 let teamMarker = Nations[nation].platoonmarkers.filter(value => Nations[nation].platoonmarkers.includes(value));
                 team.symbol = teamMarker;
@@ -1411,6 +1419,112 @@ const CoC = (() => {
             }
         });
     }
+
+    const UnitCreation = (msg) => {
+        let Tag = msg.content.split(";");
+        let unitComp = Tag[1]; //Squad of Teams, Team, Sr. Leader
+        let sectionName = Tag[2];
+        let teamName;
+        let core = (Tag[3] === "Yes") ? true:false;
+        let tokenIDs = [];
+        for (let i=0;i<msg.selected.length;i++) {
+            tokenIDs.push(msg.selected[i]._id);
+        }
+        if (tokenIDs.length === 0) {return};
+        let refToken = findObjs({_type:"graphic", id: tokenIDs[0]})[0];
+        let refChar = getObj("character", refToken.get("represents")); 
+        let nation = Attribute(refChar,"nation");
+        let player = (Allies.includes(nation)) ? 0:1;
+        let sectionID = stringGen();
+        let statusNum = parseInt(state.CoC.unitnumbers[player]);
+        statusNum += 1;
+        state.CoC.unitnumbers[player] = statusNum;
+        let statusmarkers = Nations[nation].platoonmarkers[statusNum];
+        section = new Section(player,nation,sectionID,sectionName);
+        if (unitComp === "Leader") {
+            teamName = sectionName;
+            let team = new Team(player,nation,stringGen(),sectionName,sectionID);
+            let model = new Model(refToken.id,sectionID,team.id,player);
+            team.add(model);
+            section.add(team);
+            let gmn = sectionName + ";" + sectionID + ";" + sectionName + ";" + team.id;
+            model.token.set({
+                name: model.name,
+                tint_color: "transparent",
+                aura1_color: colours.green,
+                aura1_radius: 0.1,
+                showplayers_bar1: true,
+                showname: true,
+                showplayers_aura1: true,
+                bar1_value: team.initiative,
+                showplayers_bar3: true,
+                bar3_value: 0,
+                gmnotes: gmn,
+            });
+            model.token.set("statusmarkers",statusmarkers);
+        } else if (unitComp === "Team") {
+            //solo Team, Tank etc
+            teamName = sectionName;
+            let team = new Team(player,nation,stringGen(),sectionName,sectionID);
+            let gmn = sectionName + ";" + sectionID + ";" + sectionName + ";" + team.id;
+            for (let i=0;i<tokenIDs.length;i++) {
+                let token = findObjs({_type:"graphic", id: tokenIDs[i]})[0];
+                let model = new Model(tokenIDs[i],sectionID,team.id,player);
+                team.add(model);
+                let hp = 1;
+                if (model.special.includes("Crew")) {
+                    //should be "Crew of X"
+                    let index = model.special.indexOf("Crew") + 8;
+                    let hp = parseInt(model.special.charAt(index));
+                }
+                let col = "";
+                if (i=0) {col = colours.green}
+                model.token.set({
+                    name: model.name,
+                    tint_color: "transparent",
+                    showplayers_bar1: true,
+                    showname: true,
+                    bar1_value: hp,
+                    showplayers_bar3: true,
+                    bar3_value: 0,
+                    gmnotes: gmn,
+                });
+                model.token.set("statusmarkers",statusmarkers);
+            }
+            section.add(team);
+            //team.leader();
+        } else if (unitComp === "Section") {
+
+
+
+
+
+        }
+
+
+
+
+
+
+
+
+
+
+
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
 /*
     const destroyGraphic = (tok) => {
         if (tok.get('subtype') === "token") {
