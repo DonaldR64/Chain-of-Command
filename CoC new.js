@@ -419,7 +419,6 @@ const CoC = (() => {
         }
     };
 
-
     const WeaponArray = {
         SMG: {
             Close: {Range: 6, FP: 4},
