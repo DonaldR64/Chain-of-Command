@@ -41,12 +41,13 @@ main {
     width: 800px;
     height: 450px;
     grid-gap: 4px;
-    grid-template-columns: 1fr 1fr 1fr 1fr;
-    grid-template-rows: 1fr 1fr 1fr 1fr 1fr 1fr;
-    grid-template-areas:"common   common    common   header"
-                        "common   common    common   header"
-                        "weapon   weapon    weapon   weapon"
-                        "weapon   weapon    weapon   weapon";
+    grid-template-columns: 1fr 1fr 1fr 1fr 1fr;
+    grid-template-rows: 1fr 1fr 1fr 1fr 1fr;
+    grid-template-areas:"common   common    common  header   header"
+                        "common   common    common  special  special"
+                        "common   common    common  special  special"
+                        "weapon   weapon    weapon  weapon   weapon"
+                        "weapon   weapon    weapon  weapon   weapon";
   }
 
 
@@ -123,11 +124,13 @@ section {
     border-style: none;
   }
   
-.header h3 {
-    color: white;
+
+.special {
+    grid-area: special;
+    flex-direction: center;
+    border-style: none;
 }
   
-
 .common {
     grid-area: common;
     background-color: white;
