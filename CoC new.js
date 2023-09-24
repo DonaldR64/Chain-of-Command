@@ -10,11 +10,9 @@ const CoC = (() => {
     let SectionArray = {}; //to track sections of teams
 
     let hexMap = {}; 
-    let EDGE;
-    let xSpacing = 75.1985619844599;
-    let ySpacing = 66.9658278242677;
-
-
+    let edgeArray = [];
+    const xSpacing = 75.1985619844599;
+    const ySpacing = 66.9658278242677;
     const DIRECTIONS = ["Northeast","East","Southeast","Southwest","West","Northwest"];
 
     const colours = {
@@ -95,20 +93,33 @@ const CoC = (() => {
     }
 
     const TerrainInfo = {
-        "#000000": {name: "Hill 1", height: 1,los: "Open",cover: false,move: "Normal"},
-        "#434343": {name: "Hill 2", height: 2,los: "Open",cover: false,move: "Normal"},    
+        "#000000": {name: "Hill 1", height: 1,los: 0,cover: 0,move: 0,obstacle: 0},
+        "#434343": {name: "Hill 2", height: 2,los: 0,cover: 0,move: 0,obstacle: 0},    
     };
+
+    //LOS: 0 = Open, 1 = Partially Blocked, 2/3" value, 2 = Partially Blocked 1" value, 3 = Blocks
+    //Move: 0 = Open, 1 = "Broken", 2 = Heavy Going, 3 = Really Heavy Going
+    //Obstacle: 0 = None, 1 = minor, 2 = medium, 3 = major
+    //Obstacles will generally be move 0, but an obstacle #
 
 
     const MapTokenInfo = {
-        "Woods": {name: "Woods",height: 1,los: "Partial",cover: true,move: "Difficult"},
-        "Hedge": {name: "Hedge",height: 0,los: "Open",cover: true,move: "Normal"},
-        "Crops": {name: "Crops",height: 0,los: "Open",cover: true,move: "Normal"},
-        "Ruins": {name: "Ruins",height: 1,los: "Partial",cover: true,move: "Dangerous if Rush/Charge"},
-        "Imperial Building A": {name: "Building",height: 1,los: "Blocked",cover: true,move: "Difficult"},
-        "Wood Building A": {name: "Building",height: 1,los: "Blocked",cover: true,move: "Difficult"},
-        "Minefield": {name: "Minefield",height: 0,los: "Open",cover: false,move: "Dangerous"},
-        "Razorwire": {name: "Razorwire",height: 0,los: "Open",cover: false,move: "Dangerous for Infantry"},
+        "Light Woods": {name: "Light Woods",height: 2,los: 1,cover: 1,move: 1, obstacle: 0},
+        "Heavy Woods": {name: "Heavy Woods",height: 2,los: 2,cover: 1,move: 2, obstacle: 0},
+        "Ploughed Field": {name: "Ploughed Field",height: 0,los:0,cover: 0,move: 0, obstacle: 0},
+        "Short Hedge": {name: "Short Hedge",height: 0,los: 0,cover: 1,move: 0, obstacle: 1},
+        "Short Wall": {name: "Short Wall",height: 0,los: 0,cover: 2,move: 0, obstacle: 1},
+        "Medium Hedge": {name: "Medium Hedge",height: 0,los: 1,cover: 1,move: 0, obstacle: 2},
+        "Medium Wall": {name: "Medium Wall",height: 0,los: 1,cover: 2,move: 0, obstacle: 2},
+        "Tall Hedge": {name: "Tall Hedge",height: 1,los: 3,cover: 1,move: 0, obstacle: 3},
+        "Tall Wall": {name: "Tall Wall",height: 1,los: 3,cover: 2,move: 0, obstacle: 3},
+        "Bocage": {name: "Bocage",height: 1,los: 3,cover: 2,move: 0, obstacle: 3},
+        "Tall Crops": {name: "Crops",height: 0,los: 1,cover: 1,move: 1,obstacle: 0},
+        "Ruins": {name: "Ruins",height: 1,los: 2,cover: 2,move: 1,obstacle: 0},
+        "Stone Building A": {name: "Building",height: 1,los: 3,cover: 2,move: 1,obstacle: 0},
+        "Stone Building B": {name: "Building",height: 2,los: 3,cover: 2,move: 1,obstacle: 0},
+        "Wood Building A": {name: "Building",height: 1,los: 3,cover: 1,move: 1,obstacle: 0},
+        "Wood Building B": {name: "Building",height: 2,los: 3,cover: 1,move: 1,obstacle: 0},
     }
 
 
@@ -251,12 +262,12 @@ const CoC = (() => {
         outputCard.inline = [];
     }
 
-    const DisplayDice = (roll,faction,size) => {
+    const DisplayDice = (roll,nation,size) => {
         roll = roll.toString();
-        if (!Factions[faction] || !faction) {
-            faction = "Neutral";
+        if (!Nations[nation] || !nation) {
+            nation = "Neutral";
         }
-        let tablename = Factions[faction].dice;
+        let tablename = Nations[nation].dice;
         let table = findObjs({type:'rollabletable', name: tablename})[0];
         let obj = findObjs({type:'tableitem', _rollabletableid: table.id, name: roll })[0];        
         let avatar = obj.get('avatar');
@@ -716,20 +727,20 @@ const CoC = (() => {
             output += "/desc ";
         }
 
-        if (!outputCard.faction || !Factions[outputCard.faction]) {
-            outputCard.faction = "Neutral";
+        if (!outputCard.nation || !Nations[outputCard.nation]) {
+            outputCard.nation = "Neutral";
         }
 
         //start of card
-        output += `<div style="display: table; border: ` + Factions[outputCard.faction].borderStyle + " " + Factions[outputCard.faction].borderColour + `; `;
+        output += `<div style="display: table; border: ` + Nations[outputCard.nation].borderStyle + " " + Nations[outputCard.nation].borderColour + `; `;
         output += `background-color: #EEEEEE; width: 100%; text-align: centre; `;
         output += `border-radius: 1px; border-collapse: separate; box-shadow: 5px 3px 3px 0px #aaa;;`;
         output += `"><div style="display: table-header-group; `;
-        output += `background-color: ` + Factions[outputCard.faction].backgroundColour + `; `;
-        output += `background-image: url(` + Factions[outputCard.faction].image + `), url(` + Factions[outputCard.faction].image + `); `;
+        output += `background-color: ` + Nations[outputCard.nation].backgroundColour + `; `;
+        output += `background-image: url(` + Nations[outputCard.nation].image + `), url(` + Nations[outputCard.nation].image + `); `;
         output += `background-position: left,right; background-repeat: no-repeat, no-repeat; background-size: contain, contain; align: centre,centre; `;
         output += `border-bottom: 2px solid #444444; "><div style="display: table-row;"><div style="display: table-cell; padding: 2px 2px; text-align: centre;"><span style="`;
-        output += `font-family: ` + Factions[outputCard.faction].titlefont + `; `;
+        output += `font-family: ` + Nations[outputCard.nation].titlefont + `; `;
         output += `font-style: normal; `;
 
         let titlefontsize = "1.4em";
@@ -739,11 +750,11 @@ const CoC = (() => {
 
         output += `font-size: ` + titlefontsize + `; `;
         output += `line-height: 1.2em; font-weight: strong; `;
-        output += `color: ` + Factions[outputCard.faction].fontColour + `; `;
+        output += `color: ` + Nations[outputCard.nation].fontColour + `; `;
         output += `text-shadow: none; `;
         output += `">`+ outputCard.title + `</span><br /><span style="`;
         output += `font-family: Arial; font-variant: normal; font-size: 13px; font-style: normal; font-weight: bold; `;
-        output += `color: ` +  Factions[outputCard.faction].fontColour + `; `;
+        output += `color: ` +  Nations[outputCard.nation].fontColour + `; `;
         output += `">` + outputCard.subtitle + `</span></div></div></div>`;
 
         //body of card
@@ -769,9 +780,9 @@ const CoC = (() => {
 
                 for (let q=0;q<num;q++) {
                     let info = outputCard.inline[inline];
-                    out += `<a style ="background-color: ` + Factions[outputCard.faction].backgroundColour + `; padding: 5px;`
-                    out += `color: ` + Factions[outputCard.faction].fontColour + `; text-align: centre; vertical-align: middle; border-radius: 5px;`;
-                    out += `border-color: ` + Factions[outputCard.faction].borderColour + `; font-family: Tahoma; font-size: x-small; `;
+                    out += `<a style ="background-color: ` + Nations[outputCard.nation].backgroundColour + `; padding: 5px;`
+                    out += `color: ` + Nations[outputCard.nation].fontColour + `; text-align: centre; vertical-align: middle; border-radius: 5px;`;
+                    out += `border-color: ` + Nations[outputCard.nation].borderColour + `; font-family: Tahoma; font-size: x-small; `;
                     out += `"href = "` + info.action + `">` + info.phrase + `</a>`;
                     inline++;                    
                 }
@@ -801,9 +812,9 @@ const CoC = (() => {
                 out += `"><div style="display: table-cell; padding: 0px 0px; font-family: Arial; font-style: normal; font-weight: normal; font-size: 14px; `;
                 out += `"><span style="line-height: normal; color: #000000; `;
                 out += `"> <div style='text-align: centre; display:block;'>`;
-                out += `<a style ="background-color: ` + Factions[outputCard.faction].backgroundColour + `; padding: 5px;`
-                out += `color: ` + Factions[outputCard.faction].fontColour + `; text-align: centre; vertical-align: middle; border-radius: 5px;`;
-                out += `border-color: ` + Factions[outputCard.faction].borderColour + `; font-family: Tahoma; font-size: x-small; `;
+                out += `<a style ="background-color: ` + Nations[outputCard.nation].backgroundColour + `; padding: 5px;`
+                out += `color: ` + Nations[outputCard.nation].fontColour + `; text-align: centre; vertical-align: middle; border-radius: 5px;`;
+                out += `border-color: ` + Nations[outputCard.nation].borderColour + `; font-family: Tahoma; font-size: x-small; `;
                 out += `"href = "` + info.action + `">` + info.phrase + `</a></div></span></div></div>`;
                 output += out;
             }
@@ -811,7 +822,7 @@ const CoC = (() => {
 
         output += `</div></div><br />`;
         sendChat("",output);
-        outputCard = {title: "",subtitle: "",faction: "",body: [],buttons: [],};
+        outputCard = {title: "",subtitle: "",nation: "",body: [],buttons: [],};
     }
 
 
@@ -834,7 +845,6 @@ const CoC = (() => {
 
         let edges = findObjs({_pageid: Campaign().get("playerpageid"),_type: "path",layer: "map",stroke: "#d5a6bd",});
         let c = pageInfo.width/2;
-        let edgeArray = [];
         for (let i=0;i<edges.length;i++) {
             edgeArray.push(edges[i].get("left"));
         }
@@ -842,9 +852,15 @@ const CoC = (() => {
             sendChat("","Add Edge(s) to map and reload API");
             return;
         } else if (edgeArray.length === 1) {
-            EDGE = edgeArray[0];
-        } else if (edgeArray.length > 1) {
-            sendChat("","Error with > 1 edges, Fix and Reload API");
+            if (edgeArray[0] < c) {
+                edgeArray.push(pageInfo.width)
+            } else {
+                edgeArray.unshift(0);
+            }
+        } else if (edgeArray.length === 2) {
+            edgeArray.sort();
+        } else if (edgeArray.length > 2) {
+            sendChat("","Error with > 2 edges, Fix and Reload API");
             return
         }
     }
@@ -883,8 +899,6 @@ const CoC = (() => {
         let halfToggleX = HexInfo.halfX;
         let rowLabelNum = 0;
         let columnLabel = 1;
-        //let xSpacing = 75.1985619844599;
-        //let ySpacing = 66.9658278242677;
         let startX = 37.5992809922301;
         let startY = 43.8658278242683;
 
@@ -896,15 +910,18 @@ const CoC = (() => {
                 let hexInfo = {
                     id: label,
                     centre: point,
-                    terrain: [],
-                    tokenIDs: [],
-                    elevation: 0, //modeld on hills
-                    height: 0, //height of top of terrain over elevation
-                    toplevel: 0,
+                    terrain: [], //array of names of terrain in hex
                     terrainIDs: [], //used to see if tokens in same building or such
-                    los: "Open",
-                    cover: false,
-                    move: "Normal",
+                    tokenIDs: [], //ids of tokens in hex
+                    elevation: 0, //based on hills
+                    height: 0, //height of top of terrain over elevation
+                    los: 0,
+                    cover: 0,
+                    move: 0,
+                    obstacle: 0,
+                    smoke: false,
+                    smokeGrenade: false,
+                    coverID: [], //track ID of light cover in case > 3
                 };
                 hexMap[label] = hexInfo;
                 columnLabel += 2;
@@ -920,29 +937,17 @@ const CoC = (() => {
         let keys = Object.keys(hexMap);
         const burndown = () => {
             let key = keys.shift();
-            let movementClasses = {
-                "Dangerous": 5,
-                "Dangerous for Infantry": 4,
-                "Dangerous if Rush/Charge": 3,
-                "Difficult": 2,
-                "Normal": 1,
-            }
             if (key){
                 let c = hexMap[key].centre;
-                if (c.x >= EDGE) {
+                if (c.x >= edgeArray[1] || c.x <= edgeArray[0]) {
                     //Offboard
                     hexMap[key].terrain = ["Offboard"];
                 } else {
-                    let elevation = hexMap[key].elevation;
-                    let height = hexMap[key].height;
-                    let los = hexMap[key].los;
-                    let cover = hexMap[key].cover;
-                    let toplevel = hexMap[key].toplevel;
+                    let temp = DeepCopy(hexMap[key]);
                     let taKeys = Object.keys(TerrainArray);
-                    let move = hexMap[key].move;
                     for (let t=0;t<taKeys.length;t++) {
                         let polygon = TerrainArray[taKeys[t]];
-                        if (hexMap[key].terrain.includes(polygon.name)) {continue};
+                        if (temp.terrain.includes(polygon.name)) {continue};
                         let check = false;
                         let pts = [];
                         pts.push(c);
@@ -953,39 +958,23 @@ const CoC = (() => {
                             if (check === true) {num ++};
                         }
                         if (num > 2) {
-                            hexMap[key].terrain.push(polygon.name);
-                            hexMap[key].terrainIDs.push(polygon.id);
-                            if (polygon.los === "Blocked") {
-                                los = "Blocked";
-                            } else if (los !== "Blocked" && polygon.los === "Partial") {
-                                los = "Partial";
-                            }
-                            if (polygon.cover === true) {
-                                cover = true;
-                            }
-                            if (movementClasses[polygon.move] > movementClasses[move]) {
-                                move = polygon.move;
-                            }
-
+                            temp.terrain.push(polygon.name);
+                            temp.terrainIDs.push(polygon.id);
+                            temp.los = Math.max(temp.los,polygon.los);
+                            temp.cover = Math.max(temp.cover,polygon.cover);
+                            temp.move = Math.max(temp.move,polygon.move);
+                            temp.obstacle = Math.max(temp.obstacle,polygon.obstacle);
                             if (polygon.name.includes("Hill")) {
-                                elevation = Math.max(elevation,polygon.height);
+                                temp.elevation = Math.max(temp.elevation,polygon.height);
                             } else {
                                 height = Math.max(height,polygon.height);
-                                if (polygon.name.includes("Building")) {
-                                    toplevel = polygon.height - 1;
-                                }
                             };
                         };
                     };
-                    if (hexMap[key].terrain.length === 0) {
-                        hexMap[key].terrain.push("Open Ground");
+                    if (temp.terrain.length === 0) {
+                        temp.terrain.push("Open Ground");
                     }
-                    hexMap[key].elevation = elevation;
-                    hexMap[key].height = height;
-                    hexMap[key].cover = cover;
-                    hexMap[key].los = los;
-                    hexMap[key].toplevel = toplevel;
-                    hexMap[key].move = move;
+                    hexMap[key] = temp;
                 }
                 setTimeout(burndown,0);
             }
@@ -995,7 +984,7 @@ const CoC = (() => {
         let elapsed = Date.now()-startTime;
         log("Hex Map Built in " + elapsed/1000 + " seconds");
         //add tokens to hex map, rebuild Team/Unit Arrays
-        TA();
+        //TA();
     }
 
 
@@ -1019,15 +1008,15 @@ const CoC = (() => {
         tokens.forEach((token) => {
             let character = getObj("character", token.get("represents"));           
             if (character === null || character === undefined) {return};
-            let faction = Attribute(character,"faction");
+            let nation = Attribute(character,"nation");
             let player;
-            if (!state.GDF.factions[0]) {
-                state.GDF.factions[0] = faction;
+            if (!state.GDF.nations[0]) {
+                state.GDF.nations[0] = nation;
                 player = 0;
-            } else if (state.GDF.factions[0] === faction) {
+            } else if (state.GDF.nations[0] === nation) {
                 player = 0;
             } else {
-                state.GDF.factions[1] = faction;
+                state.GDF.nations[1] = nation;
                 player = 1;
             }
 
@@ -1038,7 +1027,7 @@ const CoC = (() => {
             unitID = unitInfo[1];
             unit = UnitArray[unitID];
             if (!unit) {
-                unit = new Unit(player,faction,unitID,unitName);
+                unit = new Unit(player,nation,unitID,unitName);
                 let markers = token.get("statusmarkers");
                 let unitMarker = UnitMarkers.filter(value => markers.includes(value));
                 unit.symbol = unitMarker;
@@ -1091,6 +1080,7 @@ const CoC = (() => {
                 cover: t.cover,
                 los: t.los,
                 move: t.move,
+                obstacle: t.obstacle,
             };
             TerrainArray[id] = info;
         });
@@ -1116,6 +1106,7 @@ const CoC = (() => {
                 cover: t.cover,
                 los: t.los,
                 move: t.move,
+                obstacle: t.obstacle,
             };
             TerrainArray[id] = info;
         });
@@ -1147,7 +1138,21 @@ const CoC = (() => {
 	}
 
 
-
-
-
+    const registerEventHandlers = () => {
+        //on('chat:message', handleInput);
+        //on('change:graphic',changeGraphic);
+        //on('destroy:graphic',destroyGraphic);
+    };
+    on('ready', () => {
+        log("===> Chain of Command <===");
+        log("===> Software Version: " + version + " <===");
+        //LoadPage();
+        //BuildMap();
+        //registerEventHandlers();
+        sendChat("","API Ready, Map Loaded")
+        log("On Ready Done")
+    });
+    return {
+        // Public interface here
+    };
 });
