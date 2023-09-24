@@ -510,6 +510,8 @@ const CoC = (() => {
             if (!existing) {existing = false};
             let token = findObjs({_type:"graphic", id: tokenID})[0];
             let char = getObj("character", token.get("represents")); 
+            let charID = char.id;
+            let charName = char.get("name");
             let attributeArray = AttributeArray(char.id);
             let nation = attributeArray.nation;
             let player = (Allies.includes(nation)) ? 0:1;
@@ -548,6 +550,8 @@ const CoC = (() => {
             }
             this.name = name;
             this.id = tokenID;
+            this.charID = charID;
+            this.charName = charName;
             this.token = token;
             this.player = player;
             this.nation = nation;
@@ -1308,14 +1312,27 @@ const CoC = (() => {
     };
 
 
-    const OfficerName = (base) => {
+    const OfficerName = (model) => {
+        //checks if rank name already in character name on sheet, otherwise assigns based on nation and rank level on sheet
+        let charRanks = ["Obergefreiter","Unteroffizier","Leutnant","Hauptmann","Serzhant","Leytenant","Kapitan","Corporal","Sergeant","Platoon Sgt.","Lieutenant","Captain"];
         let ranks = {
             "Germany": ["Obergefreiter ","Unteroffizier ","Leutnant ","Hauptmann ", ],
             "Soviet": ["Serzhant ","Serzhant ","Leytenant ","Kapitan "],
             "USA": ["Sergeant ","Platoon Sgt. ","Lieutenant ","Captain "],
             "UK": ["Sergeant ","Platoon Sgt. ","Lieutenant ","Captain "],
         };
-        let name = ranks[base.nation][base.rank - 1] + Surname(base.nation);
+        let rank = "";
+        for (let i=0;i<charRanks.length;i++) {
+            rank = charRanks[i];
+            if (model.charName.includes(rank)) {
+                rank += " ";
+                break;
+            }
+        }
+        if (rank === "") {
+            rank = ranks[model.nation][model.rank - 1];
+        }
+        let name = rank + Surname(model.nation);
         return name;
     }
 
@@ -1331,6 +1348,7 @@ const CoC = (() => {
 	    let surname = nameList[num]
 	    return surname	
 	}
+
 
 
 
