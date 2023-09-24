@@ -1362,7 +1362,7 @@ const CoC = (() => {
             layer: "objects",
         })
         tokens.forEach((token) => {
-            if (token.get("name").includes("Objective") === true) {return};
+            if (token.get("name").includes("Jump Off Point") === true) {return};
             token.set({
                 name: "",
                 tint_color: "transparent",
@@ -1395,7 +1395,31 @@ const CoC = (() => {
     }
 
 
-
+    const RemoveDead = (info) => {
+        let tokens = findObjs({
+            _pageid: Campaign().get("playerpageid"),
+            _type: "graphic",
+            _subtype: "token",
+            layer: "map",
+        });
+        tokens.forEach((token) => {
+            if (token.get("status_dead") === true) {
+                token.remove();
+            }
+            if (token.get("name").includes("Jump Off Point") && info === "All") {
+                token.remove();
+            }
+        });
+    }
+/*
+    const destroyGraphic = (tok) => {
+        if (tok.get('subtype') === "token") {
+            let model = ModelArray[tok.id];
+            if (!model) {return};
+            model.kill();
+        }
+    }
+*/
 
 
     const handleInput = (msg) => {
