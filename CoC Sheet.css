@@ -43,9 +43,9 @@ main {
     grid-gap: 4px;
     grid-template-columns: 1fr 1fr 1fr 1fr 1fr;
     grid-template-rows: 1fr 1fr 1fr 1fr 1fr;
-    grid-template-areas:"common   common    header  header   header"
-                        "common   common    special  special  special"
-                        "common   common    special  special  special"
+    grid-template-areas:"common   common    common  header   header"
+                        "common   common    common  special  special"
+                        "common   common    common  special  special"
                         "weapon   weapon    weapon  weapon   weapon"
                         "weapon   weapon    weapon  weapon   weapon";
   }
@@ -142,14 +142,14 @@ section {
 
 .common {
     grid-area: common;
-    justify-items: center;
-    flex-direction: center;
+    display: flex;
+    justify-content: center;
+    align-items: center;
     background-color: white;
   }
   
 .common > img {
     object-fit: contain;
-    place-items: center;
     width: 100%;
     max-height: 100%;
     align-self: center;
