@@ -1,12 +1,13 @@
 const CoC = (() => { 
     const version = '1.9.23';
     if (!state.CoC) {state.CoC = {}};
+
     const pageInfo = {name: "",page: "",gridType: "",scale: 0,width: 0,height: 0};
     const rowLabels = ["A","B","C","D","E","F","G","H","I","J","K","L","M","N","O","P","Q","R","S","T","U","V","W","X","Y","Z","AA","BB","CC","DD","EE","FF","GG","HH","II","JJ","KK","LL","MM","NN","OO","PP","QQ","RR","SS","TT","UU","VV","WW","XX","YY","ZZ","AAA","BBB","CCC","DDD","EEE","FFF","GGG","HHH","III","JJJ","KKK","LLL","MMM","NNN","OOO","PPP","QQQ","RRR","SSS","TTT","UUU","VVV","WWW","XXX","YYY","ZZZ"];
 
     let TerrainArray = {};
     let ModelArray = {}; //Individual Models, Tanks etc
-    let UnitArray = {}; //Units of Models
+    let TeamArray = {}; //Teams of Models
     let SectionArray = {}; //to track sections of teams
 
     let hexMap = {}; 
@@ -35,7 +36,6 @@ const CoC = (() => {
         wounded: "status_dead",  //temp
         lightWound: "status_dead",
     }
-
 
     let outputCard = {title: "",subtitle: "",nation: "",body: [],buttons: [],};
     const CharacterCountries = ["Soviet ","US ", "German ","UK "];
@@ -275,8 +275,6 @@ const CoC = (() => {
         return out;
     };
 
-
-
     const HexInfo = {
         size: {
             x: 75.1985619844599/Math.sqrt(3),
@@ -286,9 +284,7 @@ const CoC = (() => {
             x: 37.5992809922301,
             y: 43.8658278242683,
         },
-        //xSpacing: 75.1985619844599,
-        halfX: 75.1985619844599/2,
-        //ySpacing: 66.9658278242677,
+        halfX: xSpacing/2,
         width: 75.1985619844599,
         height: 89.2877704323569,
         directions: {},
@@ -442,6 +438,212 @@ const CoC = (() => {
         }
     };
 
+    class Section {
+        constructor(player,nation,sectionID,sectionName) {
+            if (!sectionID) {
+                sectionID = stringGen();
+            }
+            this.id = sectionID;
+            this.name = sectionName;
+            this.player = player;
+            this.nation = nation;
+            this.teamIDs = [];
+
+
+            SectionArray[sectionID] = this;
+        }
+
+        add(team) {
+            if (this.teamIDs.includes(team.id) === false) {
+                this.teamIDs.push(team.id);
+            }
+        }
+
+        remove(team) {
+            let index = this.teamIDs.indexOf(team.id);
+            if (index > -1) {
+                this.teamIDs.splice(index,1);
+            }
+            if (this.teamIDs.length === 0) {
+                //Bad Thing
+            }
+        }
+    }
+
+    class Team {
+        constructor(player,nation,teamID,teamName,sectionID) {
+            if (!teamID) {
+                teamID = stringGen();
+            }
+            //should always have section ID as team added after section
+            this.id = teamID;
+            this.name = teamName;
+            this.player = player;
+            this.nation = nation;
+            this.sectionID = sectionID;
+            this.modelIDs = [];
+            this.symbol = "";
+
+            TeamArray[teamID] = this;
+        }
+
+        add(model) {
+            if (this.modelIDs.includes(model.id) === false) {
+                this.modelIDs.push(model.id);
+            }
+            //sort??
+        }
+
+        remove(model) {
+            let index = this.modelIDs.indexOf(model.id);
+            if (index > -1) {
+                this.modelIDs.splice(index,1);
+            }
+            if (this.modelIDs.length === 0) {
+                //Bad Thing
+            }
+        }
+    }
+
+    class Model {
+        constructor(tokenID,sectionID,teamID,existing) {
+            if (!existing) {existing = false};
+            let token = findObjs({_type:"graphic", id: tokenID})[0];
+            let char = getObj("character", token.get("represents")); 
+            let attributeArray = AttributeArray(char.id);
+            let nation = attributeArray.nation;
+            let player = (Allies.includes(nation)) ? 0:1;
+            if (nation === "Neutral") {player = 2};
+
+            let type = attributeArray.type;
+            let location = new Point(token.get("left"),token.get("top"));
+            let hex = pointToHex(location);
+            let hexLabel = hex.label();
+
+            let size = "Standard";
+            let radius = 1;
+            let vertices = TokenVertices(token);
+
+            if (token.get("width") > 100 || token.get("height") > 100) {
+                size = "Large";
+                let w = token.get("width")/2;
+                let h = token.get("height")/2;
+                radius = Math.ceil(Math.sqrt(w*w + h*h)/70);
+            }
+
+            //weapons
+
+            let special = attributeArray.special;
+            if (!special || special === "") {
+                special = " ";
+            }
+
+    
+            rank = parseInt(attributeArray.rank);
+            let name;
+            if (existing === false) {
+                name = Naming(char.get("name"),rank,faction);
+            } else {
+                name = token.get("name");
+            }
+            this.name = name;
+            this.id = tokenID;
+            this.token = token;
+            this.player = player;
+            this.nation = nation;
+            this.teamID = teamID;
+            this.sectionID = sectionID;
+            this.type = type;
+            this.hex = hex;
+            this.hexLabel = label;
+            this.rank = rank;
+            this.size = size;
+            this.radius = radius;
+            this.vertices = vertices;
+
+            this.quality = attributeArray.quality;
+            this.special = special;
+            this.initiative = 0;
+            this.leaderTeamIDs = [];
+            this.soloNCO = false; //true if is an unattached NCO
+            if (this.rank === 1 || this.rank === 2) {
+                this.initiative = 2;
+            } else if (this.rank > 2) {
+                this.initiative = this.rank;
+            }
+            this.largeHexList = []; //hexes that have parts of larger token, mainly for LOS 
+            hexMap[hexLabel].tokenIDs.push(tokenID);
+            if (this.size === "Large") {
+                LargeTokens(this); 
+            }
+
+
+
+            //this.weapons
+
+
+
+
+            ModelArray[tokenID] = this;
+        }
+
+        casualty() {
+            let health = parseInt(this.token.get("bar1_value")) - 1;
+            if (health < 1) {
+                let index = hexMap[this.hexLabel].tokenIDs.indexOf(this.id);
+                if (index > -1) {
+                    hexMap[this.hexLabel].tokenIDs.splice(index,1);
+                }
+                if (this.size === "Large") {
+                    ClearLarge(this); 
+                }            
+                let team = TeamArray[this.teamID];
+                team.remove(this);
+                if (this.token) {
+                    this.token.set({
+                        status_dead: true,
+                        layer: "map",
+                    })
+                    toFront(this.token);
+                }
+                delete ModelArray[this.id];
+            } else {
+                this.token.set({
+                    bar1_value: health,
+                });
+            }
+        }
+
+        addMan() {
+            let health = parseInt(base.token.get("bar1_value")) + 1;
+            this.token.set({
+                bar1_value: health,
+            });
+        }
+
+        pinned() {
+            let pinned = false;
+            if (this.token.get("aura1_color") === colours.yellow) {
+                pinned = true;
+            }
+            return pinned;
+        }
+
+        broken() {
+            let broken = false;
+            if (this.token.get("aura1_color") === colours.red) {
+                broken = true;
+            }
+            return broken;
+        }
+
+
+
+    }
+
+
+
+
     const WeaponArray = {
         SMG: {
             Close: {Range: 6, FP: 4},
@@ -529,10 +731,6 @@ const CoC = (() => {
         [0,0,0,0,1,1,2],
         [0,0,0,0,0,1,2],
     ]
-
-
-    const UnitMarkers = ["Plus-1d4::2006401","Minus-1d4::2006429","Plus-1d6::2006402","Minus-1d6::2006434","Plus-1d20::2006409","Minus-1d20::2006449","Hot-or-On-Fire-2::2006479","Animal-Form::2006480","Red-Cloak::2006523","A::6001458","B::6001459","C::6001460","D::6001461","E::6001462","F::6001463","G::6001464","H::6001465","I::6001466","J::6001467","L::6001468","M::6001469","O::6001471","P::6001472","Q::6001473","R::6001474","S::6001475"];
-
 
     const ModelDistance = (model1,model2) => {
         let hexes1 = [model1.hex];
@@ -984,7 +1182,7 @@ const CoC = (() => {
         let elapsed = Date.now()-startTime;
         log("Hex Map Built in " + elapsed/1000 + " seconds");
         //add tokens to hex map, rebuild Team/Unit Arrays
-        //TA();
+        TA();
     }
 
 
@@ -993,7 +1191,8 @@ const CoC = (() => {
     const TA = () => {
         //add tokens on map into various arrays
         ModelArray = {};
-        UnitArray = {};
+        TeamArray = {};
+        SectionArray = {};
         //create an array of all tokens
         let start = Date.now();
         let tokens = findObjs({
@@ -1009,31 +1208,27 @@ const CoC = (() => {
             let character = getObj("character", token.get("represents"));           
             if (character === null || character === undefined) {return};
             let nation = Attribute(character,"nation");
-            let player;
-            if (!state.GDF.nations[0]) {
-                state.GDF.nations[0] = nation;
-                player = 0;
-            } else if (state.GDF.nations[0] === nation) {
-                player = 0;
-            } else {
-                state.GDF.nations[1] = nation;
-                player = 1;
+            let info = decodeURIComponent(token.get("gmnotes")).toString();
+            if (!info) {return};
+            info = info.split(";");
+            let player = info[0];
+            let sectionName = info[1];
+            let sectionID = info[2];
+            let section = SectionArray[sectionID];
+            let teamName = info[3];
+            let teamID = info[4];
+            let team = TeamArray[teamID];
+            if (!section) {
+                section = new Section(player,nation,sectionID,sectionName);
             }
-
-            let unitInfo = decodeURIComponent(token.get("gmnotes")).toString();
-            if (!unitInfo) {return};
-            unitInfo = unitInfo.split(";")
-            unitName = unitInfo[0];
-            unitID = unitInfo[1];
-            unit = UnitArray[unitID];
-            if (!unit) {
-                unit = new Unit(player,nation,unitID,unitName);
+            if (!team) {
+                team = new TeamArray(player,nation,teamID,teamName,section.id);
                 let markers = token.get("statusmarkers");
-                let unitMarker = UnitMarkers.filter(value => markers.includes(value));
-                unit.symbol = unitMarker;
+                let teamMarker = Nations[nation].platoonmarkers.filter(value => Nations[nation].platoonmarkers.includes(value));
+                team.symbol = teamMarker;
             }
-            model = new Model(token.id,unitID,player,true);
-            unit.add(model);
+            let model = new Model(token.id,sectionID,teamID,player,true);
+            team.add(model);
         });
 
 
@@ -1138,21 +1333,103 @@ const CoC = (() => {
 	}
 
 
+
+
+    const handleInput = (msg) => {
+        if (msg.type !== "api") {
+            return;
+        }
+        let args = msg.content.split(";");
+        log(args);
+        switch(args[0]) {
+            case '!Dump':
+                log("STATE");
+                log(state.CoC);
+                log("Terrain Array");
+                log(TerrainArray);
+                log("Hex Map");
+                log(hexMap);
+                log("Model Array");
+                log(ModelArray);
+                log("Team Array");
+                log(TeamArray);
+                log("Section Array");
+                log(SectionArray);
+                break;
+            case '!TokenInfo':
+                TokenInfo(msg);
+                break;
+            case '!View':
+                View(msg);
+                break;
+            case '!ClearState':
+                ClearState();
+                break;
+            case '!StartNew':
+                StartNewGame(msg);
+                break;
+            case '!Lockdown':
+                Lockdown(msg);
+                break;
+            case '!AddAbilities':
+                AddAbilities(msg);
+                break;
+            case '!SetJumpOff':
+                SetJumpOff(msg);
+                break;
+            case '!StartGame':
+                StartGame();
+                break;
+            case '!Roll':
+                RollD6(msg);
+                break;
+            case '!CommandDice':
+                CommandDice(msg);
+                break;
+            case '!UnitCreation':
+                UnitCreation(msg);
+                break;
+            case '!Activate':
+                UnitActivation(msg);
+                break;
+            case '!Order':
+                Order(msg);
+                break;
+            case '!LeaderSelf':
+                LeaderSelf(msg);
+                break;
+            case '!Rejoin':
+                Rejoin(msg);
+                break;
+            case '!LeaderJoin':
+                LeaderJoin(msg);
+                break;
+            case '!FinalizeMarker':
+                FinalizeMarker(msg);
+                break;
+            case '!Fire':
+                Fire(msg);
+                break;
+        }
+    };
+
+
     const registerEventHandlers = () => {
-        //on('chat:message', handleInput);
+        on('chat:message', handleInput);
         //on('change:graphic',changeGraphic);
         //on('destroy:graphic',destroyGraphic);
     };
+
     on('ready', () => {
         log("===> Chain of Command <===");
         log("===> Software Version: " + version + " <===");
-        //LoadPage();
-        //BuildMap();
-        //registerEventHandlers();
+        LoadPage();
+        BuildMap();
+        registerEventHandlers();
         sendChat("","API Ready, Map Loaded")
         log("On Ready Done")
     });
     return {
         // Public interface here
     };
-});
+})();
