@@ -439,7 +439,7 @@ const CoC = (() => {
     };
 
     class Section {
-        constructor(player,nation,sectionID,sectionName) {
+        constructor(player,nation,sectionID,sectionName,core) {
             if (!sectionID) {
                 sectionID = stringGen();
             }
@@ -448,7 +448,7 @@ const CoC = (() => {
             this.player = player;
             this.nation = nation;
             this.teamIDs = [];
-
+            this.core = core;
 
             SectionArray[sectionID] = this;
         }
@@ -548,11 +548,12 @@ const CoC = (() => {
             if (!special || special === "") {
                 special = " ";
             }
-
+            let crew = false;
+            if (special.includes("Crew")) {crew = true};
             let rank = parseInt(attributeArray.rank);
             let name;
             if (existing === false) {
-                name = Naming(char.get("name"),rank,faction);
+                name = Naming(charName,nation,rank,crew);
             } else {
                 name = token.get("name");
             }
@@ -1224,14 +1225,15 @@ const CoC = (() => {
             if (!info) {return};
             info = info.split(";");
             let player = (Allies.includes(nation)) ? 0:1;
-            let sectionName = info[0];
-            let sectionID = info[1];
+            let core = info[0]
+            let sectionName = info[1];
+            let sectionID = info[2];
             let section = SectionArray[sectionID];
-            let teamName = info[2];
-            let teamID = info[3];
+            let teamName = info[3];
+            let teamID = info[4];
             let team = TeamArray[teamID];
             if (!section) {
-                section = new Section(player,nation,sectionID,sectionName);
+                section = new Section(player,nation,sectionID,sectionName,core);
             }
             if (!team) {
                 team = new Team(player,nation,teamID,teamName,sectionID);
@@ -1320,27 +1322,34 @@ const CoC = (() => {
     };
 
 
-    const OfficerName = (model) => {
+    const Naming = (charName,nation,rank,crew) => {
+        log(charName)
+        log(nation)
+        log(rank)
         //checks if rank name already in character name on sheet, otherwise assigns based on nation and rank level on sheet
-        let charRanks = ["Obergefreiter","Unteroffizier","Leutnant","Hauptmann","Serzhant","Leytenant","Kapitan","Corporal","Sergeant","Platoon Sgt.","Lieutenant","Captain"];
-        let ranks = {
-            "Germany": ["Obergefreiter ","Unteroffizier ","Leutnant ","Hauptmann ", ],
-            "Soviet": ["Serzhant ","Serzhant ","Leytenant ","Kapitan "],
-            "USA": ["Sergeant ","Platoon Sgt. ","Lieutenant ","Captain "],
-            "UK": ["Sergeant ","Platoon Sgt. ","Lieutenant ","Captain "],
+        let AllRanks = ["Obergefreiter","Unteroffizier","Leutnant","Hauptmann","Serzhant","Leytenant","Kapitan","Corporal","Sergeant","Platoon Sgt.","Lieutenant","Captain"];
+        let NationRanks = {
+            "Germany": ["Pvt.","Obergefreiter ","Unteroffizier ","Leutnant ","Hauptmann "],
+            "Soviet": ["Pvt.","Serzhant ","Serzhant ","Leytenant ","Kapitan "],
+            "USA": ["Pvt.","Sergeant ","Platoon Sgt. ","Lieutenant ","Captain "],
+            "UK": ["Pvt.","Sergeant ","Platoon Sgt. ","Lieutenant ","Captain "],
         };
-        let rank = "";
-        for (let i=0;i<charRanks.length;i++) {
-            rank = charRanks[i];
-            if (model.charName.includes(rank)) {
-                rank += " ";
+        let rankName = "";
+        for (let i=0;i<AllRanks.length;i++) {
+            r = AllRanks[i];
+            if (charName.includes(r)) {
+                rankName = r + " ";
                 break;
             }
         }
-        if (rank === "") {
-            rank = ranks[model.nation][model.rank - 1];
+        if (rankName === "") {
+            rankName = NationRanks[nation][rank];
         }
-        let name = rank + Surname(model.nation);
+        let name = rankName + Surname(nation);
+        if (crew === true) {
+            name += " + Crew"
+        } 
+
         return name;
     }
 
@@ -1397,7 +1406,7 @@ const CoC = (() => {
             forceMorale: [0,0],
             CoCPoints: [0,0],
             commandDice: [5,5],
-            unitnumbers: [[0],[0]],
+            unitnumbers: [0,0],
         }
         sendChat("","Cleared State/Arrays");
     }
@@ -1425,7 +1434,7 @@ const CoC = (() => {
         let unitComp = Tag[1]; //Squad of Teams, Team, Sr. Leader
         let sectionName = Tag[2];
         let teamName;
-        let core = (Tag[3] === "Yes") ? true:false;
+        let core = Tag[3];
         let tokenIDs = [];
         for (let i=0;i<msg.selected.length;i++) {
             tokenIDs.push(msg.selected[i]._id);
@@ -1440,14 +1449,14 @@ const CoC = (() => {
         statusNum += 1;
         state.CoC.unitnumbers[player] = statusNum;
         let statusmarkers = Nations[nation].platoonmarkers[statusNum];
-        section = new Section(player,nation,sectionID,sectionName);
+        section = new Section(player,nation,sectionID,sectionName,core);
         if (unitComp === "Leader") {
             teamName = sectionName;
             let team = new Team(player,nation,stringGen(),sectionName,sectionID);
             let model = new Model(refToken.id,sectionID,team.id,player);
             team.add(model);
             section.add(team);
-            let gmn = sectionName + ";" + sectionID + ";" + sectionName + ";" + team.id;
+            let gmn = core + ";" + sectionName + ";" + sectionID + ";" + sectionName + ";" + team.id;
             model.token.set({
                 name: model.name,
                 tint_color: "transparent",
@@ -1468,17 +1477,14 @@ const CoC = (() => {
             let team = new Team(player,nation,stringGen(),sectionName,sectionID);
             let gmn = sectionName + ";" + sectionID + ";" + sectionName + ";" + team.id;
             for (let i=0;i<tokenIDs.length;i++) {
-                let token = findObjs({_type:"graphic", id: tokenIDs[i]})[0];
-                let model = new Model(tokenIDs[i],sectionID,team.id,player);
+                let model = new Model(tokenIDs[i],sectionID,team.id,false);
                 team.add(model);
                 let hp = 1;
                 if (model.special.includes("Crew")) {
                     //should be "Crew of X"
                     let index = model.special.indexOf("Crew") + 8;
-                    let hp = parseInt(model.special.charAt(index));
-                }
-                let col = "";
-                if (i=0) {col = colours.green}
+                    hp = parseInt(model.special.charAt(index));
+                }            
                 model.token.set({
                     name: model.name,
                     tint_color: "transparent",
@@ -1492,7 +1498,6 @@ const CoC = (() => {
                 model.token.set("statusmarkers",statusmarkers);
             }
             section.add(team);
-            //team.leader();
         } else if (unitComp === "Section") {
 
 
