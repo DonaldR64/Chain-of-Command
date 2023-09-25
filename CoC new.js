@@ -1475,7 +1475,7 @@ const CoC = (() => {
             //solo Team, Tank etc
             teamName = sectionName;
             let team = new Team(player,nation,stringGen(),sectionName,sectionID);
-            let gmn = sectionName + ";" + sectionID + ";" + sectionName + ";" + team.id;
+            let gmn = core + ";" + sectionName + ";" + sectionID + ";" + sectionName + ";" + team.id;
             for (let i=0;i<tokenIDs.length;i++) {
                 let model = new Model(tokenIDs[i],sectionID,team.id,false);
                 team.add(model);
