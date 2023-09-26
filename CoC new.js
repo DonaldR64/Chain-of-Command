@@ -34,6 +34,7 @@ const CoC = (() => {
         fired: "status_Shell::5553215",
         wounded: "status_dead",  //temp
         lightWound: "status_dead",
+        moved: "status_Advantage-or-Up::2006462",
     }
 
     let outputCard = {title: "",subtitle: "",nation: "",body: [],buttons: [],};
@@ -123,10 +124,10 @@ const CoC = (() => {
         "Bocage": {name: "Bocage",height: 10,los: 3,cover: 3,move: 0, obstacle: 3},
 
         "Ruins": {name: "Ruins",height: 5,los: 2,cover: 3,move: 1,obstacle: 0},
-        "Stone Building A": {name: "Building",height: 15,los: 3,cover: 3,move: 1,obstacle: 0},
-        "Stone Building B": {name: "Building",height: 25,los: 3,cover: 3,move: 1,obstacle: 0},
-        "Wood Building A": {name: "Building",height: 15,los: 3,cover: 2,move: 1,obstacle: 0},
-        "Wood Building B": {name: "Building",height: 25,los: 3,cover: 2,move: 1,obstacle: 0},
+        "Stone Building A": {name: "Stone Building",height: 15,los: 3,cover: 3,move: 1,obstacle: 0},
+        "Stone Building B": {name: "Stone Building",height: 25,los: 3,cover: 3,move: 1,obstacle: 0},
+        "Wood Building A": {name: "Wood Building",height: 15,los: 3,cover: 2,move: 1,obstacle: 0},
+        "Wood Building B": {name: "Wood Building",height: 25,los: 3,cover: 2,move: 1,obstacle: 0},
     }
 
 
@@ -777,7 +778,7 @@ const CoC = (() => {
                 }
             }
         }
-        closestDist -= 1; //as its distance between bases
+        //closestDist -= 1; //as its distance between bases
         let info = {
             distance: closestDist,
             hex1: closestHex1,
@@ -1419,7 +1420,7 @@ log("Team2 H: " + model2Height)
 
         let theta = md.hex1.angle(md.hex2);
         let phi = Angle(theta - model1.token.get('rotation')); //angle from shooter to target taking into account shooters direction
-log("Model: " + modelLevel)
+log("Base Level: " + modelLevel)
         let sameTerrain = findCommonElements(hex1.terrainIDs,hex2.terrainIDs);
         let lastElevation = model1Height;
 
@@ -1468,7 +1469,7 @@ log("Open Flag prior: " + openFlag)
 
 log(i + ": " + qrs.label());
 log(interHex.terrain);
-log("Cover: " + interHex.cover);
+log("Interhex Cover: " + interHex.cover);
 log("Blocks LOS? " + interHex.los)
             let interHexElevation = parseInt(interHex.elevation) - modelLevel
             let interHexHeight = parseInt(interHex.height);
