@@ -1445,27 +1445,13 @@ log("In same terrain, distance > allowed")
             partialFlag = true;
             partialHexes += hex1.los + 1;
         }
+log("Initial Open Flag: " + openFlag);
+log("Initial Partial Flag: " + partialFlag);
 
         for (let i=1;i<interHexes.length;i++) {
             //0 is tokens own hex
-log("Partial Flag of Prior Hex: " + partialFlag)
-log("Open Flag prior: " + openFlag)
             let qrs = interHexes[i];
             let interHex = hexMap[qrs.label()];
-
-            if (interHex.cover === 2 && cover < 3) {
-                lightCovers.push(interHex.coverID);
-                if (cover === 2 && lightCovers.length > 2) {
-                    cover = 3;
-                } else {
-                    cover = 2;
-                }
-            }
-            if (interHex.cover === 3 && cover < 3) {
-                cover = 3;
-            }
-
-            //cover 1 and 4 are only for hex the model is in
 
 log(i + ": " + qrs.label());
 log(interHex.terrain);
@@ -1491,8 +1477,20 @@ log("Intervening Higher Terrain");
             }            
             lastElevation = interHexElevation;
 
-            if (interHexHeight + interHexElevation >= B && i>1) {
-                if (interHex.los === 3) {
+            if (interHexHeight + interHexElevation >= B && i > 1) {
+                if (interHex.cover === 2 && cover < 3) {
+                    lightCovers.push(interHex.coverID);
+                    if (cover === 2 && lightCovers.length > 2) {
+                        cover = 3;
+                    } else {
+                        cover = 2;
+                    }
+                }
+                if (interHex.cover === 3 && cover < 3) {
+                    cover = 3;
+                }
+                //cover 1 and 4 are only for hex the model is in
+                if (interHex.los === 3 && i<(interHexes.length - 1)) {
 log("Intervening LOS Blocking Terrain");
                     los = false;
                     break;
@@ -1519,6 +1517,9 @@ log("Other side of Partial LOS Blocking Terrain")
                     }
                 } 
             }
+            log("Open Flag: " + openFlag)
+            log("Partial Flag: " + partialFlag)
+            log("Cover at Hex: " + cover)
         }
         if (model2Height < lastElevation && lastElevation > model1Height && lastElevation > model2Height) {
 log("Intervening Higher Terrain")
@@ -1535,7 +1536,7 @@ log("Partial Hexes: " + partialHexes)
         }
 
         if (hex2.los === 0 && partialFlag === true) {
-//log("Other side of Partial LOS Blocking Terrain")
+log("Other side of Partial LOS Blocking Terrain")
             los = false;
         }
     
