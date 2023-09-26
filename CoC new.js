@@ -200,7 +200,6 @@ const CoC = (() => {
         }
     }
 
-
     //Retrieve Values from Character Sheet Attributes
     const Attribute = (character,attributename) => {
         //Retrieve Values from Character Sheet Attributes
@@ -251,7 +250,6 @@ const CoC = (() => {
             }
         }
     }
-
 
     const ButtonInfo = (phrase,action) => {
         let info = {
@@ -1426,6 +1424,8 @@ log("Team2 H: " + model2Height)
 log("Base Level: " + modelLevel)
         let sameTerrain = findCommonElements(hex1.terrainIDs,hex2.terrainIDs);
         let lastElevation = model1Height;
+        let smokeGrenade = false;
+
 
         if (sameTerrain === true) {
             //in same Terrain
@@ -1478,9 +1478,25 @@ log("Intervening Higher Terrain");
                 los = false;
                 break;
             }            
+            if (interHex.smoke === true) {
+                //smoke barrage has unlimited height
+                los = false;
+                break;
+            }
+            if (interHex.smokeGrenade === true && B <= 20) {
+                smokeGrenade = true;
+            }
+
             lastElevation = interHexElevation;
 
             if (interHexHeight + interHexElevation >= B) {
+                //check for intervening models
+
+
+
+
+
+
 log("Terrain higher than B")
                 if (interHex.cover === 2 && cover < 3 && i > 1) {
 log("Hex CoverID: " + interHex.coverID);
@@ -1580,6 +1596,7 @@ log("Other side of Partial LOS Blocking Terrain")
             cover: cover,
             distance: distanceT1T2,
             angle: phi,
+            smokeGrenade: smokeGrenade,
         }
         return result;
     }
