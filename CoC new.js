@@ -1411,12 +1411,12 @@ log("Team2 H: " + model2Height)
         model1Height -= modelLevel;
         model2Height -= modelLevel;
 
-        let interHexes = hex1.linedraw(hex2); 
+        let interHexes = md.hex1.linedraw(md.hex2); 
         //uses closest hexes
         //interHexes will be hexes between shooter and target, not including their hexes or closest hexes for large tokens
         let lightCovers = [];
 
-        let theta = hex1.angle(hex2);
+        let theta = md.hex1.angle(md.hex2);
         let phi = Angle(theta - model1.token.get('rotation')); //angle from shooter to target taking into account shooters direction
 log("Model: " + modelLevel)
         let sameTerrain = findCommonElements(hex1.terrainIDs,hex2.terrainIDs);
@@ -1576,14 +1576,15 @@ log("Partial Hexes: " + partialHexes)
         let id1 = Tag[1];
         let model1 = ModelArray[id1];
         let id2 = Tag[2];
+        let model2 = ModelArray[id2];
         let losResult = LOS(id1,id2);
         let covers = ["the Open","n/a","Light Cover","Hard Cover","a Bunker"]
 
         SetupCard("LOS","",model1.nation);
         if (losResult.los === false) {
-            outputCard.body.push("No LOS to Target");
+            outputCard.body.push(model1.name + " has No LOS to " + model2.name);
         } else {
-            outputCard.body.push("LOS to Target");
+            outputCard.body.push(model1.name + " has LOS to " + model2.name);
             outputCard.body.push("Distance: " + losResult.distance + " feet");
             outputCard.body.push("Target is in " + covers[losResult.cover]);
         }
