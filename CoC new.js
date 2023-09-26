@@ -1473,7 +1473,13 @@ log("Interhex Cover: " + interHex.cover);
 log("Blocks LOS? " + interHex.los)
             let interHexElevation = parseInt(interHex.elevation) - modelLevel
             let interHexHeight = parseInt(interHex.height);
-            let B = i * model2Height / distanceT1T2; //max height of intervening hex terrain to be seen over
+            let B;
+            if (model1Height > model2Height) {
+                B = (distanceT1T2 - (i* MapScale)) * model1Height / distanceT1T2;
+
+            } else if (model1Height <= model2Height) {
+                B = i* MapScale * model2Height / distanceT1T2;
+            }
 log("InterHex Height: " + interHexHeight);
 log("InterHex Elevation: " + interHexElevation);
 log("Last Elevation: " + lastElevation);
