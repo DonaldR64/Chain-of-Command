@@ -1184,8 +1184,9 @@ const CoC = (() => {
                             temp.obstacle = Math.max(temp.obstacle,polygon.obstacle);
                             if (polygon.name.includes("Hill")) {
                                 temp.elevation = Math.max(temp.elevation,polygon.height);
+                                temp.height = Math.max(temp.elevation,polygon.height)
                             } else {
-                                height = Math.max(height,polygon.height);
+                                temp.height = Math.max(temp.height,polygon.height);
                             };
                         };
                     };
@@ -1268,7 +1269,7 @@ const CoC = (() => {
             toFront(pathObj);
             let colour = pathObj.get("stroke").toLowerCase();
             let t = TerrainInfo[colour];
-            if (!t) {return};    
+            if (!t) {return};  
             let path = JSON.parse(pathObj.get("path"));
             let centre = new Point(pathObj.get("left"), pathObj.get("top"));
             let w = pathObj.get("width");
@@ -1880,7 +1881,39 @@ log("Partial Hexes: " + partialHexes)
     }
 
 
-
+    const changeGraphic = (tok,prev) => {
+        if (tok.get('subtype') === "token") {
+            //RemoveLines();
+            log(tok.get("name") + " moving");
+            if ((tok.get("left") !== prev.left) || (tok.get("top") !== prev.top)) {
+                let model = ModelArray[tok.id];
+                if (!model) {return};
+                let oldHex = model.hex;
+                let oldHexLabel = model.hexLabel;
+                let newLocation = new Point(tok.get("left"),tok.get("top"));
+                let newHex = pointToHex(newLocation);
+                let newHexLabel = newHex.label();
+                newLocation = hexToPoint(newHex); //centres it in hex
+                //let newRotation = oldHex.angle(newHex);
+                tok.set({
+                    left: newLocation.x,
+                    top: newLocation.y,
+                });
+                model.hex = newHex;
+                model.hexLabel = newHexLabel;
+                model.location = newLocation;
+                let index = hexMap[oldHexLabel].tokenIDs.indexOf(tok.id);
+                if (index > -1) {
+                    hexMap[oldHexLabel].tokenIDs.splice(index,1);
+                }
+                hexMap[newHexLabel].tokenIDs.push(tok.id);
+                if (model.size === "Large") {
+                    model.vertices = TokenVertices(tok);
+                    LargeTokens(model);
+                }
+            };
+        };
+    };
 
 
 
@@ -1984,7 +2017,7 @@ log("Partial Hexes: " + partialHexes)
 
     const registerEventHandlers = () => {
         on('chat:message', handleInput);
-        //on('change:graphic',changeGraphic);
+        on('change:graphic',changeGraphic);
         //on('destroy:graphic',destroyGraphic);
     };
 
