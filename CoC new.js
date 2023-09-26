@@ -1140,7 +1140,7 @@ const CoC = (() => {
                     obstacle: 0,
                     smoke: false,
                     smokeGrenade: false,
-                    coverID: [], //track ID of light cover in case > 3
+                    coverID: "", //track ID of light cover in case > 3
                 };
                 hexMap[label] = hexInfo;
                 columnLabel += 2;
@@ -1189,6 +1189,9 @@ const CoC = (() => {
                             } else {
                                 temp.height = Math.max(temp.height,polygon.height);
                             };
+                            if (polygon.cover === 2) {
+                                temp.coverID = polygon.id
+                            }
                         };
                     };
                     if (temp.terrain.length === 0) {
@@ -1477,16 +1480,21 @@ log("Intervening Higher Terrain");
             }            
             lastElevation = interHexElevation;
 
-            if (interHexHeight + interHexElevation >= B && i > 1) {
-                if (interHex.cover === 2 && cover < 3) {
-                    lightCovers.push(interHex.coverID);
+            if (interHexHeight + interHexElevation >= B) {
+log("Terrain higher than B")
+                if (interHex.cover === 2 && cover < 3 && i > 1) {
+log("Hex CoverID: " + interHex.coverID);
+                    if (lightCovers.includes(interHex.coverID) === false) {
+                        lightCovers.push(interHex.coverID);
+                    }
+log(lightCovers)
                     if (cover === 2 && lightCovers.length > 2) {
                         cover = 3;
                     } else {
                         cover = 2;
                     }
                 }
-                if (interHex.cover === 3 && cover < 3) {
+                if (interHex.cover === 3 && cover < 3 && i > 1) {
                     cover = 3;
                 }
                 //cover 1 and 4 are only for hex the model is in
@@ -1503,7 +1511,7 @@ log("Partial Hexes: " + partialHexes)
                         los = false;
                         break;
                     }
-                } else if (interHex.los === "Open") {
+                } else if (interHex.los === 0) {
                     if (openFlag === false) {
                         openFlag = true;
                         partialHexes = 0;
@@ -1516,6 +1524,20 @@ log("Other side of Partial LOS Blocking Terrain")
                         }
                     }
                 } 
+            } else {
+log("Terrain less than B")
+                //treated as open as looking into empty space above terrain
+                if (openFlag === false) {
+                    openFlag = true;
+                    partialHexes = 0;
+                    partialFlag = false;
+                } else if (openFlag === true) {
+                    if (partialFlag === true) {
+log("Other side of Partial LOS Blocking Terrain")
+                        los = false;
+                        break;
+                    }
+                }
             }
             log("Open Flag: " + openFlag)
             log("Partial Flag: " + partialFlag)
@@ -1633,6 +1655,8 @@ log("Other side of Partial LOS Blocking Terrain")
             let m = ModelArray[team.modelIDs[i]];
             outputCard.body.push(m.name);
         }
+
+
         PrintCard();
     }
 
