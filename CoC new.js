@@ -1558,14 +1558,13 @@ log("Partial Hexes: " + partialHexes)
         let hex = hexMap[model.hexLabel];
         let height = parseInt(hex.elevation);
         if (model.type === "Infantry" || model.type === "Gun") {
-            height += 5;
             if (model.token.get(sm.floor2) === true) {
                 height += 10;
             } else if (model.token.get(sm.floor3) === true) {
                 height += 20;
             }
         } else if (model.type === "Vehicle") {
-            height += 8;
+            height += 5;
         }
         return height;
     }
