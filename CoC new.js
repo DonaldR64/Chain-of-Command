@@ -1423,7 +1423,7 @@ log("Model: " + modelLevel)
 
         if (sameTerrain === true) {
             //in same Terrain
-            if ((md.hex1.los === 1 && distanceT1T2 > 60) || (md.hex1.los === 2 && distanceT1T2 > 40) {
+            if ((md.hex1.los === 1 && distanceT1T2 > 60) || (md.hex1.los === 2 && distanceT1T2 > 40)) {
 log("In same terrain, distance > allowed")
                 let result = {
                     los: false,
@@ -1522,7 +1522,6 @@ log("Partial Hexes: " + partialHexes)
             if (partialHexes > 12) {
                 log("Too Deep into Partial ")
                 los = false;
-                break;
             }
         }
 
