@@ -1378,9 +1378,8 @@ const CoC = (() => {
         if (!special) {special = " "};
         let model1 = ModelArray[id1];
         let team1 = TeamArray[model1.teamID];
+        let model2 = ModelArray[id2];       
         let team2 = TeamArray[model2.teamID];
-
-        let model2 = ModelArray[id2];
 
         if (!model1 || !model2) {
             let info = (!model1) ? "Model 1":"Model2";
@@ -1397,10 +1396,12 @@ const CoC = (() => {
         let md = ModelDistance(model1,model2);
 
         let distanceT1T2 = md.distance * MapScale; //in feet
-     
+        let hex1 = hexMap[md.hex1.label()];
+        let hex2 = hexMap[md.hex2.label()];
         let los = true;
 
-        let cover = md.hex2.cover;
+
+        let cover = hex2.cover;
 log("Model 2 Hex Cover: " + cover);
         let model1Height = modelHeight(model1);
         let model2Height = modelHeight(model2);
@@ -1410,20 +1411,20 @@ log("Team2 H: " + model2Height)
         model1Height -= modelLevel;
         model2Height -= modelLevel;
 
-        let interHexes = md.hex1.linedraw(md.hex2); 
+        let interHexes = hex1.linedraw(hex2); 
         //uses closest hexes
         //interHexes will be hexes between shooter and target, not including their hexes or closest hexes for large tokens
         let lightCovers = [];
 
-        let theta = md.hex1.angle(md.hex1);
+        let theta = hex1.angle(hex2);
         let phi = Angle(theta - model1.token.get('rotation')); //angle from shooter to target taking into account shooters direction
 log("Model: " + modelLevel)
-        let sameTerrain = findCommonElements(md.hex1.terrainIDs,md.hex2.terrainIDs);
+        let sameTerrain = findCommonElements(hex1.terrainIDs,hex2.terrainIDs);
         let lastElevation = model1Height;
 
         if (sameTerrain === true) {
             //in same Terrain
-            if ((md.hex1.los === 1 && distanceT1T2 > 60) || (md.hex1.los === 2 && distanceT1T2 > 40)) {
+            if ((hex1.los === 1 && distanceT1T2 > 60) || (hex1.los === 2 && distanceT1T2 > 40)) {
 log("In same terrain, distance > allowed")
                 let result = {
                     los: false,
@@ -1435,12 +1436,12 @@ log("In same terrain, distance > allowed")
             }
         }
 
-        let openFlag = (md.hex1.los === 0) ? true:false;
+        let openFlag = (hex1.los === 0) ? true:false;
         let partialHexes = 0;
         let partialFlag = false;
-        if (md.hex1.los === 1 || md.hex1.los === 2) {
+        if (hex1.los === 1 || hex1.los === 2) {
             partialFlag = true;
-            partialHexes += md.hex1.los + 1;
+            partialHexes += hex1.los + 1;
         }
 
         for (let i=1;i<interHexes.length;i++) {
@@ -1516,8 +1517,8 @@ log("Intervening Higher Terrain")
             los = false;
         }   
 
-        if (md.hex2.los === 1 || md.hex2.los === 2) {
-            partialHexes += md.hex2.los + 1;
+        if (hex2.los === 1 || hex2.los === 2) {
+            partialHexes += hex2.los + 1;
 log("Partial Hexes: " + partialHexes)
             if (partialHexes > 12) {
                 log("Too Deep into Partial ")
@@ -1525,7 +1526,7 @@ log("Partial Hexes: " + partialHexes)
             }
         }
 
-        if (md.hex2.los === 0 && partialFlag === true) {
+        if (hex2.los === 0 && partialFlag === true) {
 //log("Other side of Partial LOS Blocking Terrain")
             los = false;
         }
@@ -1590,8 +1591,41 @@ log("Partial Hexes: " + partialHexes)
         PrintCard();
     }
 
-
-
+    const TokenInfo = (msg) => {
+        if (!msg.selected) {
+            sendChat("","No Token Selected");
+            return;
+        };
+        let id = msg.selected[0]._id;
+        let model = ModelArray[id];
+        if (!model) {
+            sendChat("","Not in Model Array Yet");
+            return;
+        };
+        let nation  = model.nation;
+        if (!nation) {nation = "Neutral"};
+        SetupCard(model.name,"Hex: " + model.hexLabel,nation);
+        let h = hexMap[model.hexLabel];
+        let terrain = h.terrain;
+        terrain = terrain.toString();
+        let elevation = modelHeight(model);
+        let cover = h.cover;
+        let team = TeamArray[model.teamID];
+        let covers = ["the Open","Light Cover if Stationary","Light Cover","Hard Cover","a Bunker"]
+        outputCard.body.push("Terrain: " + terrain);
+        if (cover === 1 && model.type !== "Infantry") {
+            cover = 0;
+        }
+        outputCard.body.push(model.name + " is in " + covers[cover]);
+        outputCard.body.push("Elevation: " + elevation + " Feet");
+        outputCard.body.push("[hr]");
+        outputCard.body.push("Team: " + team.name);
+        for (let i=0;i<team.modelIDs.length;i++) {
+            let m = ModelArray[team.modelIDs[i]];
+            outputCard.body.push(m.name);
+        }
+        PrintCard();
+    }
 
 
 
@@ -1893,7 +1927,7 @@ log("Partial Hexes: " + partialHexes)
             case '!TokenInfo':
                 TokenInfo(msg);
                 break;
-            case '!LOS':
+            case '!CheckLOS':
                 CheckLOS(msg);
                 break;
             case '!ClearState':
