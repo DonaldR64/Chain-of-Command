@@ -29,9 +29,8 @@ const CoC = (() => {
         overwatch: "status_sentry-gun",
         tactical: "status_Prone::2006547",
         order: "status_green",
-        floor1: "",
-        floor2: "",
-        floor3: "",
+        floor2: "status_Green-02::2006607",
+        floor3: "status_Green-03::2006611",
         fired: "status_Shell::5553215",
         wounded: "status_dead",  //temp
         lightWound: "status_dead",
@@ -92,34 +91,42 @@ const CoC = (() => {
 
     }
 
+    const MapScale = 10; //10 ft to 1 hex
+
     const TerrainInfo = {
-        "#000000": {name: "Hill 1", height: 1,los: 0,cover: 0,move: 0,obstacle: 0},
-        "#434343": {name: "Hill 2", height: 2,los: 0,cover: 0,move: 0,obstacle: 0},    
+        "#000000": {name: "Hill 1", height: 10,los: 0,cover: 0,move: 0,obstacle: 0},
+        "#434343": {name: "Hill 2", height: 20,los: 0,cover: 0,move: 0,obstacle: 0},    
+
+        "#00ff00": {name: "Woods", height: 60,los: 2, cover: 2, move: 1, obstacle: 0},
+        "#93c47d": {name: "Orchard", height: 25, los: 1, cover: 2, move: 1, obstacle: 0},
+        "#b6d7a8": {name: "Scrub", height: 5, los: 1, cover: 2, move: 1, obstacle: 0},
+
     };
 
-    //LOS: 0 = Open, 1 = Partially Blocked, 2/3" value, 2 = Partially Blocked 1" value, 3 = Blocks
+    //LOS: 0 = Open, 1 = Partially Blocked, 2/3" value, 2 = Partially Blocked 1" value, 3 = blocked 
+    //cover: 0 = none, 1 = light cover for infantry if stationary, 2 = light cover, 3 = heavy cover, 4 = strongpoint
     //Move: 0 = Open, 1 = "Broken", 2 = Heavy Going, 3 = Really Heavy Going
     //Obstacle: 0 = None, 1 = minor, 2 = medium, 3 = major
     //Obstacles will generally be move 0, but an obstacle #
 
-
     const MapTokenInfo = {
-        "Light Woods": {name: "Light Woods",height: 2,los: 1,cover: 1,move: 1, obstacle: 0},
-        "Heavy Woods": {name: "Heavy Woods",height: 2,los: 2,cover: 1,move: 2, obstacle: 0},
-        "Ploughed Field": {name: "Ploughed Field",height: 0,los:0,cover: 0,move: 0, obstacle: 0},
-        "Short Hedge": {name: "Short Hedge",height: 0,los: 0,cover: 1,move: 0, obstacle: 1},
-        "Short Wall": {name: "Short Wall",height: 0,los: 0,cover: 2,move: 0, obstacle: 1},
-        "Medium Hedge": {name: "Medium Hedge",height: 0,los: 1,cover: 1,move: 0, obstacle: 2},
-        "Medium Wall": {name: "Medium Wall",height: 0,los: 1,cover: 2,move: 0, obstacle: 2},
-        "Tall Hedge": {name: "Tall Hedge",height: 1,los: 3,cover: 1,move: 0, obstacle: 3},
-        "Tall Wall": {name: "Tall Wall",height: 1,los: 3,cover: 2,move: 0, obstacle: 3},
-        "Bocage": {name: "Bocage",height: 1,los: 3,cover: 2,move: 0, obstacle: 3},
-        "Tall Crops": {name: "Crops",height: 0,los: 1,cover: 1,move: 1,obstacle: 0},
-        "Ruins": {name: "Ruins",height: 1,los: 2,cover: 2,move: 1,obstacle: 0},
-        "Stone Building A": {name: "Building",height: 1,los: 3,cover: 2,move: 1,obstacle: 0},
-        "Stone Building B": {name: "Building",height: 2,los: 3,cover: 2,move: 1,obstacle: 0},
-        "Wood Building A": {name: "Building",height: 1,los: 3,cover: 1,move: 1,obstacle: 0},
-        "Wood Building B": {name: "Building",height: 2,los: 3,cover: 1,move: 1,obstacle: 0},
+        "Ploughed Field": {name: "Ploughed Field",height: 0,los:0,cover: 0,move: 1, obstacle: 0},
+        "Medium Crops": {name: "Medium Crops",height: 3,los: 0,cover: 1,move: 1,obstacle: 0},
+        "Tall Crops": {name: "Tall Crops",height: 5,los: 1,cover: 2,move: 1,obstacle: 0},
+
+        "Short Hedge": {name: "Short Hedge",height: 3,los: 0,cover: 2,move: 0, obstacle: 1},
+        "Short Wall": {name: "Short Wall",height: 3,los: 0,cover: 3,move: 0, obstacle: 1},
+        "Medium Hedge": {name: "Medium Hedge",height: 5,los: 3,cover: 2,move: 0, obstacle: 2},
+        "Medium Wall": {name: "Medium Wall",height: 5,los: 3,cover: 3,move: 0, obstacle: 2},
+        "Tall Hedge": {name: "Tall Hedge",height: 10,los: 3,cover: 2,move: 0, obstacle: 3},
+        "Tall Wall": {name: "Tall Wall",height: 10,los: 3,cover: 3,move: 0, obstacle: 3},
+        "Bocage": {name: "Bocage",height: 10,los: 3,cover: 3,move: 0, obstacle: 3},
+
+        "Ruins": {name: "Ruins",height: 5,los: 2,cover: 3,move: 1,obstacle: 0},
+        "Stone Building A": {name: "Building",height: 15,los: 3,cover: 3,move: 1,obstacle: 0},
+        "Stone Building B": {name: "Building",height: 25,los: 3,cover: 3,move: 1,obstacle: 0},
+        "Wood Building A": {name: "Building",height: 15,los: 3,cover: 2,move: 1,obstacle: 0},
+        "Wood Building B": {name: "Building",height: 25,los: 3,cover: 2,move: 1,obstacle: 0},
     }
 
 
@@ -1323,9 +1330,6 @@ const CoC = (() => {
 
 
     const Naming = (charName,nation,rank,crew) => {
-        log(charName)
-        log(nation)
-        log(rank)
         //checks if rank name already in character name on sheet, otherwise assigns based on nation and rank level on sheet
         let AllRanks = ["Obergefreiter","Unteroffizier","Leutnant","Hauptmann","Serzhant","Leytenant","Kapitan","Corporal","Sergeant","Platoon Sgt.","Lieutenant","Captain"];
         let NationRanks = {
@@ -1347,7 +1351,7 @@ const CoC = (() => {
         }
         let name = rankName + Surname(nation);
         if (crew === true) {
-            name += " + Crew"
+            name = "Cpl. " + Surname(nation) + " Crew";
         } 
 
         return name;
@@ -1365,6 +1369,235 @@ const CoC = (() => {
 	    let surname = nameList[num]
 	    return surname	
 	}
+
+
+    const LOS = (id1,id2,special) => {
+
+//need to add other models into LOS that might block LOS
+
+        if (!special) {special = " "};
+        let model1 = ModelArray[id1];
+        let team1 = TeamArray[model1.teamID];
+        let team2 = TeamArray[model2.teamID];
+
+        let model2 = ModelArray[id2];
+
+        if (!model1 || !model2) {
+            let info = (!model1) ? "Model 1":"Model2";
+            sendChat("",info + " is not in Model Array");
+            let result = {
+                los: false,
+                cover: 0,
+                distance: -1,
+                phi: 0,
+            }
+            return result
+        }
+
+        let md = ModelDistance(model1,model2);
+
+        let distanceT1T2 = md.distance * MapScale; //in feet
+     
+        let los = true;
+
+        let cover = md.hex2.cover;
+log("Model 2 Hex Cover: " + cover);
+        let model1Height = modelHeight(model1);
+        let model2Height = modelHeight(model2);
+log("Team1 H: " + model1Height)
+log("Team2 H: " + model2Height)
+        let modelLevel = Math.min(model1Height,model2Height);
+        model1Height -= modelLevel;
+        model2Height -= modelLevel;
+
+        let interHexes = md.hex1.linedraw(md.hex2); 
+        //uses closest hexes
+        //interHexes will be hexes between shooter and target, not including their hexes or closest hexes for large tokens
+        let lightCovers = [];
+
+        let theta = md.hex1.angle(md.hex1);
+        let phi = Angle(theta - model1.token.get('rotation')); //angle from shooter to target taking into account shooters direction
+log("Model: " + modelLevel)
+        let sameTerrain = findCommonElements(md.hex1.terrainIDs,md.hex2.terrainIDs);
+        let lastElevation = model1Height;
+
+        if (sameTerrain === true) {
+            //in same Terrain
+            if ((md.hex1.los === 1 && distanceT1T2 > 60) || (md.hex1.los === 2 && distanceT1T2 > 40) {
+log("In same terrain, distance > allowed")
+                let result = {
+                    los: false,
+                    cover: 0,
+                    distance: -1,
+                    phi: 0
+                }
+                return result;
+            }
+        }
+
+        let openFlag = (md.hex1.los === 0) ? true:false;
+        let partialHexes = 0;
+        let partialFlag = false;
+        if (md.hex1.los === 1 || md.hex1.los === 2) {
+            partialFlag = true;
+            partialHexes += md.hex1.los + 1;
+        }
+
+        for (let i=1;i<interHexes.length;i++) {
+            //0 is tokens own hex
+log("Partial Flag of Prior Hex: " + partialFlag)
+log("Open Flag prior: " + openFlag)
+            let qrs = interHexes[i];
+            let interHex = hexMap[qrs.label()];
+
+            if (interHex.cover === 2 && cover < 3) {
+                lightCovers.push(interHex.coverID);
+                if (cover === 2 && lightCovers.length > 2) {
+                    cover = 3;
+                } else {
+                    cover = 2;
+                }
+            }
+            if (interHex.cover === 3 && cover < 3) {
+                cover = 3;
+            }
+
+            //cover 1 and 4 are only for hex the model is in
+
+log(i + ": " + qrs.label());
+log(interHex.terrain);
+log("Cover: " + interHex.cover);
+log("Blocks LOS? " + interHex.los)
+            let interHexElevation = parseInt(interHex.elevation) - modelLevel
+            let interHexHeight = parseInt(interHex.height);
+            let B = i * model2Height / distanceT1T2; //max height of intervening hex terrain to be seen over
+log("InterHex Height: " + interHexHeight);
+log("InterHex Elevation: " + interHexElevation);
+log("Last Elevation: " + lastElevation);
+log("B: " + B)
+            if (interHexElevation < lastElevation && lastElevation > model1Height && lastElevation > model2Height) {
+log("Intervening Higher Terrain");
+                los = false;
+                break;
+            }            
+            lastElevation = interHexElevation;
+
+            if (interHexHeight + interHexElevation >= B && i>1) {
+                if (interHex.los === 3) {
+log("Intervening LOS Blocking Terrain");
+                    los = false;
+                    break;
+                } else if (interHex.los === 1 || interHex.los === 2) {
+                    partialFlag = true;
+                    partialHexes += interHex.los + 1;
+log("Partial Hexes: " + partialHexes)
+                    if (partialHexes > 12) {
+                        log("Too Deep into Partial ")
+                        los = false;
+                        break;
+                    }
+                } else if (interHex.los === "Open") {
+                    if (openFlag === false) {
+                        openFlag = true;
+                        partialHexes = 0;
+                        partialFlag = false;
+                    } else if (openFlag === true) {
+                        if (partialFlag === true) {
+log("Other side of Partial LOS Blocking Terrain")
+                            los = false;
+                            break;
+                        }
+                    }
+                } 
+            }
+        }
+        if (model2Height < lastElevation && lastElevation > model1Height && lastElevation > model2Height) {
+log("Intervening Higher Terrain")
+            los = false;
+        }   
+
+        if (md.hex2.los === 1 || md.hex2.los === 2) {
+            partialHexes += md.hex2.los + 1;
+log("Partial Hexes: " + partialHexes)
+            if (partialHexes > 12) {
+                log("Too Deep into Partial ")
+                los = false;
+                break;
+            }
+        }
+
+        if (md.hex2.los === 0 && partialFlag === true) {
+//log("Other side of Partial LOS Blocking Terrain")
+            los = false;
+        }
+    
+        if (cover === 1) {
+            if (model2.type === "Infantry" && model2.token.get(sm.moved) === false) {
+                cover = 2;
+            } else {
+                cover = 0;
+            }
+        }
+
+        if (team2.order === "Tactical") {
+            cover += 1;
+            if (cover === 1) {cover = 2};
+        }
+
+        let result = {
+            los: los,
+            cover: cover,
+            distance: distanceT1T2,
+            angle: phi,
+        }
+        return result;
+    }
+
+    const modelHeight = (model) => {
+        //height of model based on terrain, with additional based on type
+        let hex = hexMap[model.hexLabel];
+        let height = parseInt(hex.elevation);
+        if (model.type === "Infantry" || model.type === "Gun") {
+            height += 5;
+            if (model.token.get(sm.floor2) === true) {
+                height += 10;
+            } else if (model.token.get(sm.floor3) === true) {
+                height += 20;
+            }
+        } else if (model.type === "Vehicle") {
+            height += 8;
+        }
+        return height;
+    }
+
+
+    const CheckLOS = (msg) => {
+        let Tag = msg.content.split(";");
+        let id1 = Tag[1];
+        let model1 = ModelArray[id1];
+        let id2 = Tag[2];
+        let losResult = LOS(id1,id2);
+        let covers = ["the Open","n/a","Light Cover","Hard Cover","a Bunker"]
+
+        SetupCard("LOS","",model1.nation);
+        if (losResult.los === false) {
+            outputCard.body.push("No LOS to Target");
+        } else {
+            outputCard.body.push("LOS to Target");
+            outputCard.body.push("Distance: " + losResult.distance + " feet");
+            outputCard.body.push("Target is in " + covers[losResult.cover]);
+        }
+
+        PrintCard();
+    }
+
+
+
+
+
+
+
+
 
     const ClearState = () => {
         //clear arrays
@@ -1514,7 +1747,7 @@ const CoC = (() => {
                     for (let k=0;k<group.length;k++) {
                         let id2 = group[k];
                         let m2 = ModelArray[id2];
-                        let dist = ModelDistance(m1,m2);
+                        let dist = ModelDistance(m1,m2).distance;
                         if (dist >= 1) {continue};
                         sortedIDs.push(id);
                         groups[j].push(id);
@@ -1529,7 +1762,7 @@ const CoC = (() => {
                     let id2 = tokenIDs[j];
                     let m2 = ModelArray[id2];
                     if (id2 === id) {continue};
-                    let dist = ModelDistance(m1,m2);
+                    let dist = ModelDistance(m1,m2).distance;
                     if (dist >= 1) {continue};
                     sortedIDs.push(id);
                     sortedIDs.push(id2);
@@ -1661,8 +1894,8 @@ const CoC = (() => {
             case '!TokenInfo':
                 TokenInfo(msg);
                 break;
-            case '!View':
-                View(msg);
+            case '!LOS':
+                CheckLOS(msg);
                 break;
             case '!ClearState':
                 ClearState();
