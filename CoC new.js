@@ -1499,24 +1499,120 @@ const CoC = (() => {
             }
             section.add(team);
         } else if (unitComp === "Section") {
+            //sort into units in squad based on spacing
+            //when creating units, need to seperate each subunit on map
+            let groups = [];
+            let sortedIDs = [];
+            for (let i=0;i<tokenIDs.length;i++) {
+                let id = tokenIDs[i];
+                let m1 = ModelArray[id];
+                if (sortedIDs.includes(id)) {continue};
+                //check if adjacent to a team in existing group
+                sortLoop1:
+                for (let j=0;j<groups.length;j++) {
+                    let group = groups[j];
+                    for (let k=0;k<group.length;k++) {
+                        let id2 = group[k];
+                        let m2 = ModelArray[id2];
+                        let dist = ModelDistance(m1,m2);
+                        if (dist >= 1) {continue};
+                        sortedIDs.push(id);
+                        groups[j].push(id);
+                        break sortLoop1
+                    }
+                }
+                if (sortedIDs.includes(id)) {continue};
+                //check if any adjacent teams which will be themselves unsorted
+                //if so, the 2 form a group
+                //if not, id becomes its own group
+                for (let j=0;j<tokenIDs.length;j++) {
+                    let id2 = tokenIDs[j];
+                    let m2 = ModelArray[id2];
+                    if (id2 === id) {continue};
+                    let dist = ModelDistance(m1,m2);
+                    if (dist >= 1) {continue};
+                    sortedIDs.push(id);
+                    sortedIDs.push(id2);
+                    groups.push([id,id2]);
+                    break;
+                }
+                if (sortedIDs.includes(id)) {continue};
+                groups.push([id]);
+            }
 
-
-
-
-
+            //now sort into "Teams" and Jr. Leaders
+            for (let i=0;i<groups.length;i++) {
+                let group = groups[i];
+                let letters = ["A","B","C","D","E","F","G"];
+                let teamName = sectionName + "/" + letters[i];
+                let team = new Team(player,nation,stringGen(),sectionName,sectionID);
+                let gmn = core + ";" + sectionName + ";" + sectionID + ";" + teamName + ";" + team.id;
+/////work from here
+                let teamID = team.id;
+                let nco = false;
+                for (let j=0;j<group.length;j++) {
+                    let base = BaseArray[group[j]];
+                    let name = base.charName;
+                    let hp = parseInt(base.token.get("currentSide")) + 1; //# men in token
+                    if (base.rank > 0) {
+                        name = OfficerName(base);
+                        nco = true;
+                        hp = base.initiative;
+                        tName = name;
+                    } else {
+                        for (let c=0;c<CharacterCountries.length;c++) {
+                            let cName = CharacterCountries[c];
+                            if (name.includes(cName)) {
+                                name = name.replace(cName,"");
+                            }
+                        }
+                        tName = name;
+                        if (group.length > 1) {
+                            name += "/" + (j+1);
+                        }
+                    }
+                    base.name = name;                    
+                    base.token.set({
+                        name: name,
+                        tint_color: "transparent",
+                        showplayers_bar1: true,
+                        showname: true,
+                        showplayers_bar3: true,
+                        bar3_value: 0,
+                        bar1_value: hp,
+                    })
+                    if (nco === true || j === 0) {
+                        base.token.set({
+                            aura1_color: colours.green,
+                            aura1_radius: 0.1,
+                            showplayers_aura1: true,
+                        })
+                    }
+                    base.token.set("statusmarkers",statusmarkers);
+                    team.bases.push(base.id);
+                    if (nco === true) {
+                        unit.nco = base.id;
+                        team.leader = true;
+                    }
+                    team.name = tName;
+                    if (base.special.includes("Crew")) {
+                        team.crew = true;
+                    }
+                    let gmn = tName + ";" + teamID + ";" +  unitName + ";" + unit.id + ";" + core;
+                    base.token.set("gmnotes",gmn);
+                    base.unitID = unit.id;
+                    base.teamID = team.id;
+                    unit.add(team);
+                }
+            }
         }
 
 
 
 
 
-
-
-
-
-
-
     }
+
 
 
 
