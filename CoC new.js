@@ -168,6 +168,10 @@ const CoC = (() => {
         return arr1.some(item => arr2.includes(item));
     };
 
+    const returnCommonElements = (array1,array2) => {
+        return array1.filter(value => array2.includes(value));
+    }
+
     const DeepCopy = (variable) => {
         variable = JSON.parse(JSON.stringify(variable))
         return variable;
@@ -342,8 +346,6 @@ const CoC = (() => {
             }
             return results;
         }
-
-
 
         len() {
             return (Math.abs(this.q) + Math.abs(this.r) + Math.abs(this.s)) / 2;
@@ -590,7 +592,7 @@ const CoC = (() => {
             } else if (this.rank > 2) {
                 this.initiative = this.rank;
             }
-            this.largeHexList = []; //hexes that have parts of larger token, mainly for LOS 
+            this.hexList = [hex]; //hexes that have parts of larger token, mainly for LOS 
             hexMap[hexLabel].tokenIDs.push(tokenID);
             if (this.size === "Large") {
                 LargeTokens(this); 
@@ -734,9 +736,6 @@ const CoC = (() => {
             Penalty: 0,
             Cover: "Nil",
         },
-
-
-
     }
 
     const ToHitArray = {
@@ -755,10 +754,10 @@ const CoC = (() => {
         let hexes1 = [model1.hex];
         let hexes2 = [model2.hex];
         if (model1.size === "Large") {
-            hexes1 = hexes1.concat(model1.largeHexList);
+            hexes1 = hexes1.concat(model1.hexList);
         }
         if (model2.size === "Large") {
-            hexes2 = hexes2.concat(model2.largeHexList);
+            hexes2 = hexes2.concat(model2.hexList);
         }
         let closestDist = Infinity;
         let closestHex1 = model1.hex;
@@ -875,16 +874,15 @@ const CoC = (() => {
 
     const ClearLarge = (model) => {
         //clear Old hexes, if any
-        for (let h=0;h<model.largeHexList.length;h++) {
-            let chlabel = model.largeHexList[h].label();
+        for (let h=0;h<model.hexList.length;h++) {
+            let chlabel = model.hexList[h].label();
             let index = hexMap[chlabel].tokenIDs.indexOf(model.id);
             if (index > -1) {
                 hexMap[chlabel].tokenIDs.splice(index,1);
             }                    
         }        
-        model.largeHexList = [];
+        model.hexList = [];
     }
-
 
     const LargeTokens = (model) => {
         ClearLarge(model);
@@ -893,7 +891,7 @@ const CoC = (() => {
         for (let i=0;i<radiusHexes.length;i++) {
             let radiusHex = radiusHexes[i];
             let radiusHexLabel = radiusHex.label();
-            if (radiusHexLabel === model.hexLabel) {continue};
+            //if (radiusHexLabel === model.hexLabel) {continue};
             if (!hexMap[radiusHexLabel]) {continue};
             let c = hexMap[radiusHexLabel].centre;
             let check = false;
@@ -909,11 +907,10 @@ const CoC = (() => {
                 if (hexMap[radiusHexLabel].tokenIDs.includes(model.id) === false) {
                     hexMap[radiusHexLabel].tokenIDs.push(model.id);
                 }
-                model.largeHexList.push(radiusHex);
+                model.hexList.push(radiusHex);
             }
         }
     }
-
 
     const TokenVertices = (tok) => {
       //Create corners with final being the first
@@ -1399,8 +1396,8 @@ const CoC = (() => {
         let md = ModelDistance(model1,model2);
 
         let distanceT1T2 = md.distance * MapScale; //in feet
-        let hex1 = hexMap[md.hex1.label()];
-        let hex2 = hexMap[md.hex2.label()];
+        let hex1 = hexMap[model1.hexLabel];
+        let hex2 = hexMap[model2.hexLabel];
         let los = true;
 
 
@@ -1414,18 +1411,16 @@ log("Team2 H: " + model2Height)
         model1Height -= modelLevel;
         model2Height -= modelLevel;
 
-        let interHexes = md.hex1.linedraw(md.hex2); 
-        //uses closest hexes
+        let interHexes = model1.hex.linedraw(model2.hex); 
         //interHexes will be hexes between shooter and target, not including their hexes or closest hexes for large tokens
         let lightCovers = [];
 
-        let theta = md.hex1.angle(md.hex2);
+        let theta = model1.hex.angle(model2.hex);
         let phi = Angle(theta - model1.token.get('rotation')); //angle from shooter to target taking into account shooters direction
 log("Base Level: " + modelLevel)
         let sameTerrain = findCommonElements(hex1.terrainIDs,hex2.terrainIDs);
         let lastElevation = model1Height;
         let smokeGrenade = false;
-
 
         if (sameTerrain === true) {
             //in same Terrain
@@ -1450,6 +1445,10 @@ log("In same terrain, distance > allowed")
         }
 log("Initial Open Flag: " + openFlag);
 log("Initial Partial Flag: " + partialFlag);
+
+        let friendlyModels = ModelArray.filter(value => {
+            return value.player === model1.player;
+        })
 
         for (let i=1;i<interHexes.length;i++) {
             //0 is tokens own hex
@@ -1487,15 +1486,30 @@ log("Intervening Higher Terrain");
                 smokeGrenade = true;
             }
 
+            //check for intervening friendlies in 2 hexes of interHex
+            //if find one, flag and note height
+            let friendlyFlag = false;
+            let friendlyHeight = 0;
+            for (let t=0;t<friendlyModels.length;t++) {
+                let fm = friendlyModels[t];
+                let fHexes = fm.hexList;
+                for (let u=0;u<fHexes.length;u++) {
+                    let dis = fHexes[u].distance(qrs);
+                    if (dis <= 2) {
+                        friendlyFlag = true;
+                        friendlyHeight = Math.max(model.height,friendlyHeight);
+                    }
+                }
+            }
+
             lastElevation = interHexElevation;
 
-            if (interHexHeight + interHexElevation >= B) {
-                //check for intervening models
-
-
-
-
-
+            if (interHexHeight + interHexElevation + friendlyHeight >= B) {
+                if (friendlyFlag === true) {
+log("Intervening Friendly w/in 2 blocks LOS")
+                    los = false;
+                    break;
+                }
 
 log("Terrain higher than B")
                 if (interHex.cover === 2 && cover < 3 && i > 1) {
