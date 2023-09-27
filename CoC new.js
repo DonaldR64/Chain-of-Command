@@ -759,7 +759,7 @@ const CoC = (() => {
         let closestDist = Infinity;
         let closestHex = model2.hex;
         for (let j=0;j<hexes.length;j++) {
-            let hex2 = hexes2[j];
+            let hex2 = hexes[j];
             let dist = model1.hex.distance(hex2);
             if (dist < closestDist) {
                 closestDist = dist;
@@ -770,7 +770,7 @@ const CoC = (() => {
         let phi = Angle(theta - model1.token.get('rotation')); //angle from shooter to target taking into account shooters direction
         let info = {
             distance: closestDist,
-            closestHex: closestHex1,
+            closestHex: closestHex,
             angle: phi,
         }
         return info;
