@@ -95,12 +95,14 @@ const CoC = (() => {
     const MapScale = 10; //10 ft to 1 hex
 
     const TerrainInfo = {
-        "#000000": {name: "Hill 1", height: 10,los: 0,cover: 0,move: 0,obstacle: 0},
-        "#434343": {name: "Hill 2", height: 20,los: 0,cover: 0,move: 0,obstacle: 0},    
+        "#000000": {name: "Hill 1", height: 10,los: 0,cover: 0,move: 0,obstacle: 0,linear: false},
+        "#434343": {name: "Hill 2", height: 20,los: 0,cover: 0,move: 0,obstacle: 0,linear: false},    
 
-        "#00ff00": {name: "Woods", height: 60,los: 2, cover: 2, move: 1, obstacle: 0},
-        "#93c47d": {name: "Orchard", height: 25, los: 1, cover: 2, move: 1, obstacle: 0},
-        "#b6d7a8": {name: "Scrub", height: 5, los: 1, cover: 2, move: 1, obstacle: 0},
+        "#00ff00": {name: "Woods", height: 60,los: 2, cover: 2, move: 1, obstacle: 0,linear: false},
+        "#93c47d": {name: "Orchard", height: 25, los: 1, cover: 2, move: 1, obstacle: 0,linear: false},
+        "#b6d7a8": {name: "Scrub", height: 5, los: 1, cover: 2, move: 1, obstacle: 0,linear: false},
+
+        "#ffffff": {name: "Ridgeline", height: 5, los: 3, cover: 3, move: 0, obstacle: 0,linear: false},
 
     };
 
@@ -111,15 +113,24 @@ const CoC = (() => {
     //Obstacles will generally be move 0, but an obstacle #
 
     const MapTokenInfo = {
-        "Ploughed Field": {name: "Ploughed Field",height: 0,los:0,cover: 0,move: 1, obstacle: 0},
-        "Medium Crops": {name: "Medium Crops",height: 3,los: 0,cover: 1,move: 1,obstacle: 0},
-        "Tall Crops": {name: "Tall Crops",height: 5,los: 1,cover: 2,move: 1,obstacle: 0},
+        "Ploughed Field": {name: "Ploughed Field",height: 0,los:0,cover: 0,move: 1, obstacle: 0,linear: false},
+        "Medium Crops": {name: "Medium Crops",height: 3,los: 0,cover: 1,move: 1,obstacle: 0,linear: false},
+        "Tall Crops": {name: "Tall Crops",height: 5,los: 1,cover: 2,move: 1,obstacle: 0,linear: false},
 
-        "Ruins": {name: "Ruins",height: 5,los: 2,cover: 3,move: 1,obstacle: 0},
-        "Stone Building A": {name: "Stone Building",height: 15,los: 3,cover: 3,move: 1,obstacle: 0},
-        "Stone Building B": {name: "Stone Building",height: 25,los: 3,cover: 3,move: 1,obstacle: 0},
-        "Wood Building A": {name: "Wood Building",height: 15,los: 3,cover: 2,move: 1,obstacle: 0},
-        "Wood Building B": {name: "Wood Building",height: 25,los: 3,cover: 2,move: 1,obstacle: 0},
+        "Ruins": {name: "Ruins",height: 5,los: 2,cover: 3,move: 1,obstacle: 0,linear: false},
+        "Stone Building A": {name: "Stone Building",height: 15,los: 3,cover: 3,move: 1,obstacle: 0,linear: false},
+        "Stone Building B": {name: "Stone Building",height: 25,los: 3,cover: 3,move: 1,obstacle: 0,linear: false},
+        "Wood Building A": {name: "Wood Building",height: 15,los: 3,cover: 2,move: 1,obstacle: 0,linear: false},
+        "Wood Building B": {name: "Wood Building",height: 25,los: 3,cover: 2,move: 1,obstacle: 0,linear: false},
+        "Short Hedge": {name: "Short Hedge",height: 3,los: 0,cover: 2,move: 0, obstacle: 1,linear: true},
+        "Short Wall": {name: "Short Wall",height: 3,los: 0,cover: 3,move: 0, obstacle: 1,linear: true},
+        "Medium Hedge": {name: "Medium Hedge",height: 5,los: 3,cover: 2,move: 0, obstacle: 2,linear: true},
+        "Medium Wall": {name: "Medium Wall",height: 5,los: 3,cover: 3,move: 0, obstacle: 2,linear: true},
+        "Tall Hedge": {name: "Tall Hedge",height: 10,los: 3,cover: 2,move: 0, obstacle: 3,linear: true},
+        "Tall Wall": {name: "Tall Wall",height: 10,los: 3,cover: 3,move: 0, obstacle: 3,linear: true},
+        "Bocage": {name: "Bocage",height: 10,los: 3,cover: 3,move: 0, obstacle: 3,linear: true},
+
+
     }
 
     const LinearTerrainInfo = {
@@ -1156,7 +1167,7 @@ const CoC = (() => {
                     let taKeys = Object.keys(TerrainArray);
                     for (let t=0;t<taKeys.length;t++) {
                         let polygon = TerrainArray[taKeys[t]];
-                        if (temp.terrain.includes(polygon.name)) {continue};
+                        if (temp.terrain.includes(polygon.name) || ) {continue};
                         let check = false;
                         let pts = [];
                         pts.push(c);
@@ -1199,6 +1210,40 @@ const CoC = (() => {
         //add tokens to hex map, rebuild Team/Unit Arrays
         TA();
     }
+
+
+    const Linear = (polygon) => {
+        //adds linear obstacles, eg Ridgelines, to hex map
+        let vertices = polygon.vertices;
+        for (let i=0;i<(vertices.length - 1);i++) {
+            let hexes = [];
+            let pt1 = vertices[i];
+            let pt2 = vertices[i+1];
+            let hex1 = pointToHex(pt1);
+            let hex2 = pointToHex(pt2);
+            hexes = hex1.linedraw(hex2);
+            for (let j=0;j<hexes.length;j++) {
+                let hex = hexes[j];
+                let hexLabel = hex.label();
+                if (!hexMap[hexLabel]) {continue};
+                let temp = hexMap[hexLabel];
+                if (hexMap[hexLabel].terrain.includes(polygon.name)) {continue};
+                hexMap[hexLabel].terrain.push(polygon.name);
+                hexMap[hexLabel].terrainIDs.push(polygon.id);
+                hexMap[hexLabel].los = Math.max(hexMap[hexLabel].los,polygon.los);
+                hexMap[hexLabel].cover = Math.max(hexMap[hexLabel].cover,polygon.cover);
+                hexMap[hexLabel].move = Math.max(hexMap[hexLabel].move,polygon.move);
+                hexMap[hexLabel].obstacle = Math.max(hexMap[hexLabel].obstacle,polygon.obstacle);
+                hexMap[hexLabel].height = Math.max(hexMap[hexLabel].height,polygon.height);
+                if (polygon.cover === 2) {
+                    hexMap[hexLabel].coverID = polygon.id
+                }
+            }
+        }
+    }
+
+
+
 
 
 //Shock tokens
@@ -1252,8 +1297,6 @@ const CoC = (() => {
         log(`${c} token${s} checked in ${elapsed/1000} seconds - ` + Object.keys(ModelArray).length + " placed in Model Array");
     }
 
-
-//Linear
     const BuildTerrainArray = () => {
         TerrainArray = {};
         //first look for graphic lines outlining hills etc
@@ -1292,6 +1335,7 @@ const CoC = (() => {
                 los: t.los,
                 move: t.move,
                 obstacle: t.obstacle,
+                linear: t.linear,
             };
             TerrainArray[id] = info;
         });
@@ -1302,6 +1346,7 @@ const CoC = (() => {
             truncName = truncName.trim();
             let t = MapTokenInfo[truncName];
             if (!t) {return};
+
             let vertices = TokenVertices(token);
             let centre = new Point(token.get('left'),token.get('top'));
             let id = stringGen();
@@ -1318,6 +1363,7 @@ const CoC = (() => {
                 los: t.los,
                 move: t.move,
                 obstacle: t.obstacle,
+                linear: t.linear,
             };
             TerrainArray[id] = info;
         });
