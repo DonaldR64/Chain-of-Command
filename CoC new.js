@@ -1363,15 +1363,9 @@ const CoC = (() => {
 	}
 
 
-    const LOS = (id1,id2,special) => {
-
-//need to add other models into LOS that might block LOS
-
-        if (!special) {special = " "};
+    const LOS = (id1,id2) => {
         let model1 = ModelArray[id1];
-        let team1 = TeamArray[model1.teamID];
         let model2 = ModelArray[id2];       
-        let team2 = TeamArray[model2.teamID];
 
         if (!model1 || !model2) {
             let info = (!model1) ? "Model 1":"Model2";
@@ -1392,7 +1386,6 @@ const CoC = (() => {
         let hex1 = hexMap[model1.hexLabel];
         let hex2 = hexMap[model2.hexLabel];
         let los = true;
-
 
         let cover = hex2.cover;
 log("Model 2 Hex Cover: " + cover);
@@ -1486,8 +1479,10 @@ log(fm.name + " Player: " + fm.player)
                 if (fm.id === model1.id || fm.id === model2.id || fm.player !== model1.player) {continue};
                 let fHexes = fm.hexList;
                 for (let u=0;u<fHexes.length;u++) {
-                    let dis = fHexes[u].distance(qrs);
-                    if (dis <= 2) {
+                    let fHex = fHexes[u];
+                    let dis = fHex.distance(qrs)
+log("Models Hex: " + fHex + " / Distance " + dis)
+                    if (dis < 2) {
                         friendlyFlag = true;
                         friendlyHeight = Math.max(fm.height,friendlyHeight);
                     }
@@ -1515,7 +1510,7 @@ log(qrs)
 
             if (interHexHeight + interHexElevation + friendlyHeight >= B) {
                 if (friendlyFlag === true) {
-log("Intervening Friendly w/in 2 blocks LOS")
+log("Intervening Friendly blocks LOS")
                     los = false;
                     break;
                 }
@@ -1611,11 +1606,6 @@ log("Other side of Partial LOS Blocking Terrain")
             } else {
                 cover = 0;
             }
-        }
-
-        if (team2.order === "Tactical") {
-            cover += 1;
-            if (cover === 1) {cover = 2};
         }
 
         let result = {
@@ -1983,6 +1973,7 @@ log("Other side of Partial LOS Blocking Terrain")
                     hexMap[oldHexLabel].tokenIDs.splice(index,1);
                 }
                 hexMap[newHexLabel].tokenIDs.push(tok.id);
+                model.hexList = [newHex];
                 if (model.size === "Large") {
                     model.vertices = TokenVertices(tok);
                     LargeTokens(model);
