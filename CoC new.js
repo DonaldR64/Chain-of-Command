@@ -102,7 +102,7 @@ const CoC = (() => {
         "#93c47d": {name: "Orchard", height: 25, los: 1, cover: 2, move: 1, obstacle: 0,linear: false},
         "#b6d7a8": {name: "Scrub", height: 5, los: 1, cover: 2, move: 1, obstacle: 0,linear: false},
 
-        "#ffffff": {name: "Ridgeline", height: 5, los: 3, cover: 3, move: 0, obstacle: 0,linear: false},
+        "#ffffff": {name: "Ridgeline", height: 5, los: 0, cover: 3, move: 0, obstacle: 0,linear: true},
 
     };
 
@@ -1255,7 +1255,7 @@ const CoC = (() => {
                 let teamMarker = Nations[nation].platoonmarkers.filter(value => Nations[nation].platoonmarkers.includes(value));
                 team.symbol = teamMarker;
             }
-            let model = new Model(token.id,sectionID,teamID,player,true);
+            let model = new Model(token.id,sectionID,teamID,true);
             team.add(model);
         });
 
@@ -1454,8 +1454,8 @@ log("Initial Partial Flag: " + partialFlag);
             let qrs = interHexes[i];
             let interHex = hexMap[qrs.label()];
 
-log(i + ": " + qrs.label());
-log(interHex.terrain);
+log("<==================>");
+log("Hex: " + qrs.label());
 log("Interhex Cover: " + interHex.cover);
 log("Blocks LOS? " + interHex.los)
             let interHexElevation = parseInt(interHex.elevation) - modelLevel
@@ -1490,15 +1490,16 @@ log("Intervening Higher Terrain");
             let friendlyFlag = false;
             let enemyVehicle = false;
             let friendlyHeight = 0;
+log("Friendlies")
             for (let t=0;t<fKeys.length;t++) {
                 let fm = ModelArray[fKeys[t]];
-log(fm.name + " Player: " + fm.player)
                 if (fm.id === model1.id || fm.id === model2.id || fm.player !== model1.player || fm.teamID === model1.teamID) {continue};
+log(fm.name + " Player: " + fm.player)
                 let fHexes = fm.hexList;
                 for (let u=0;u<fHexes.length;u++) {
                     let fHex = fHexes[u];
                     let dis = fHex.distance(qrs)
-log("Models Hex: " + fHex + " / Distance " + dis)
+log("Friendlies Hex: " + fHex.label() + " / Distance " + dis)
                     if (dis < 2) {
                         friendlyFlag = true;
                         friendlyHeight = Math.max(fm.height,friendlyHeight);
@@ -1509,10 +1510,6 @@ log("Models Hex: " + fHex + " / Distance " + dis)
             //check for intervening enemy vehicle blocking LOS
             for (let t=0;t<fKeys.length;t++) {
                 let fm = ModelArray[fKeys[t]];
-
-log(fm.name + " Player: " + fm.player)
-log(fm.hexList)
-log(qrs)
                 if (fm.id === model1.id || fm.id === model2.id || fm.player === model1.player || fm.type !== "Vehicle") {continue};
                 for (let u=0;u<fm.hexList.length;u++) {
                     if (fm.hexList[u].label() === qrs.label()) {
@@ -1520,7 +1517,6 @@ log(qrs)
                         break;
                     }
                 }
-                log("Enemy Vehicle: " + enemyVehicle)
                 friendlyHeight = Math.max(fm.height,friendlyHeight);
             }
 
@@ -1540,11 +1536,9 @@ log("Enemy Vehicle in LOS")
                 }
 log("Terrain higher than B")
                 if (interHex.cover === 2 && cover < 3 && i > 1) {
-log("Hex CoverID: " + interHex.coverID);
                     if (lightCovers.includes(interHex.coverID) === false) {
                         lightCovers.push(interHex.coverID);
                     }
-log(lightCovers)
                     if (cover === 2 && lightCovers.length > 2) {
                         cover = 3;
                     } else {
@@ -1805,7 +1799,7 @@ log("Other side of Partial LOS Blocking Terrain")
         if (unitComp === "Leader") {
             teamName = sectionName;
             let team = new Team(player,nation,stringGen(),sectionName,sectionID);
-            let model = new Model(refToken.id,sectionID,team.id,player);
+            let model = new Model(refToken.id,sectionID,team.id,false);
             team.add(model);
             section.add(team);
             let gmn = core + ";" + sectionName + ";" + sectionID + ";" + sectionName + ";" + team.id;
