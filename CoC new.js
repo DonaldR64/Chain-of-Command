@@ -41,7 +41,7 @@ const CoC = (() => {
     const CharacterCountries = ["Soviet ","US ", "German ","UK "];
 
     const Axis = ["Germany","Italy","Japan"];
-    const Allies = ["Soviet","USA","British","Canada"];
+    const Allies = ["Soviet","USA","UK","Canada"];
 
     const Nations = {
         "Soviet": {
@@ -535,6 +535,9 @@ const CoC = (() => {
             if (nation === "Neutral") {player = 2};
 
             let type = attributeArray.type;
+            let modelHeight = 5;
+            if (type === "Vehicle") {modelHeight = 10};
+
             let location = new Point(token.get("left"),token.get("top"));
             let hex = pointToHex(location);
             let hexLabel = hex.label();
@@ -581,6 +584,7 @@ const CoC = (() => {
             this.size = size;
             this.radius = radius;
             this.vertices = vertices;
+            this.height = modelHeight;
 
             this.quality = attributeArray.quality;
             this.special = special;
@@ -1446,9 +1450,7 @@ log("In same terrain, distance > allowed")
 log("Initial Open Flag: " + openFlag);
 log("Initial Partial Flag: " + partialFlag);
 
-        let friendlyModels = ModelArray.filter(value => {
-            return value.player === model1.player;
-        })
+        let fKeys = Object.keys(ModelArray);
 
         for (let i=1;i<interHexes.length;i++) {
             //0 is tokens own hex
@@ -1489,18 +1491,30 @@ log("Intervening Higher Terrain");
             //check for intervening friendlies in 2 hexes of interHex
             //if find one, flag and note height
             let friendlyFlag = false;
+            let enemyVehicle = false;
             let friendlyHeight = 0;
-            for (let t=0;t<friendlyModels.length;t++) {
-                let fm = friendlyModels[t];
+            for (let t=0;t<fKeys.length;t++) {
+                let fm = ModelArray[fKeys[t]];
+log(fm.name + " Player: " + fm.player)
+                if (fm.id === model1.id || fm.id === model2.id || fm.player !== model1.player) {continue};
                 let fHexes = fm.hexList;
                 for (let u=0;u<fHexes.length;u++) {
                     let dis = fHexes[u].distance(qrs);
                     if (dis <= 2) {
                         friendlyFlag = true;
-                        friendlyHeight = Math.max(model.height,friendlyHeight);
+                        friendlyHeight = Math.max(fm.height,friendlyHeight);
                     }
                 }
             }
+            //check for intervening enemy vehicle blocking LOS
+            for (let t=0;t<fKeys.length;t++) {
+                let fm = ModelArray[fKeys[t]];
+log(fm.name + " Player: " + fm.player)
+                if (fm.id === model1.id || fm.id === model2.id || fm.player === model1.player || fm.type !== "Vehicle") {continue};
+                enemyVehicle = findCommonElements(fm.hexList,interHexes); //will be true if LOS crosses 
+                friendlyHeight = Math.max(fm.height,friendlyHeight);
+            }
+
 
             lastElevation = interHexElevation;
 
@@ -1510,7 +1524,11 @@ log("Intervening Friendly w/in 2 blocks LOS")
                     los = false;
                     break;
                 }
-
+                if (enemyVehicle === true) {
+log("Enemy Vehicle in LOS")
+                    los = false;
+                    break;
+                }
 log("Terrain higher than B")
                 if (interHex.cover === 2 && cover < 3 && i > 1) {
 log("Hex CoverID: " + interHex.coverID);
