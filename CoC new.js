@@ -1084,33 +1084,6 @@ const CoC = (() => {
             return
         }
     }
-    
-    const Linear = (polygon) => {
-        //adds linear obstacles, eg Ridgelines
-        let vertices = polygon.vertices;
-        for (let i=0;i<(vertices.length - 1);i++) {
-            let hexes = [];
-            let pt1 = vertices[i];
-            let pt2 = vertices[i+1];
-            let hex1 = pointToHex(pt1);
-            let hex2 = pointToHex(pt2);
-            hexes = hex1.linedraw(hex2);
-            for (let j=0;j<hexes.length;j++) {
-                let hex = hexes[j];
-                let hexLabel = hex.label();
-                if (!hexMap[hexLabel]) {continue};
-                if (hexMap[hexLabel].terrain.includes(polygon.name) === false) {
-                    hexMap[hexLabel].terrain.push(polygon.name);
-                    hexMap[hexLabel].terrainIDs.push(polygon.id);
-                    if (polygon.blocksLOS === true) {
-                        hexMap[hexLabel].losBlocked = true;
-                    }
-                    hexMap[hexLabel].height = Math.max(hexMap[hexLabel].height,polygon.height);
-                    hexMap[hexLabel].cover = Math.min(hexMap[hexLabel].cover,polygon.cover);
-                }
-            }
-        }
-    }
 
     const BuildMap = () => {
         let startTime = Date.now();
@@ -1154,6 +1127,13 @@ const CoC = (() => {
 
         BuildTerrainArray();
 
+        let taKeys = Object.keys(TerrainArray);
+        for (let i=0;i<taKeys.length;i++) {
+            let polygon = TerrainArray[taKeys[i]];
+            if (polygon.linear === false) {continue};
+            Linear(polygon);
+        }
+
         let keys = Object.keys(hexMap);
         const burndown = () => {
             let key = keys.shift();
@@ -1164,10 +1144,9 @@ const CoC = (() => {
                     hexMap[key].terrain = ["Offboard"];
                 } else {
                     let temp = DeepCopy(hexMap[key]);
-                    let taKeys = Object.keys(TerrainArray);
                     for (let t=0;t<taKeys.length;t++) {
                         let polygon = TerrainArray[taKeys[t]];
-                        if (temp.terrain.includes(polygon.name) || ) {continue};
+                        if (temp.terrain.includes(polygon.name) || polygon.linear === true) {continue};
                         let check = false;
                         let pts = [];
                         pts.push(c);
@@ -1226,7 +1205,6 @@ const CoC = (() => {
                 let hex = hexes[j];
                 let hexLabel = hex.label();
                 if (!hexMap[hexLabel]) {continue};
-                let temp = hexMap[hexLabel];
                 if (hexMap[hexLabel].terrain.includes(polygon.name)) {continue};
                 hexMap[hexLabel].terrain.push(polygon.name);
                 hexMap[hexLabel].terrainIDs.push(polygon.id);
