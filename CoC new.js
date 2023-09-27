@@ -10,6 +10,8 @@ const CoC = (() => {
     let TeamArray = {}; //Teams of Models
     let SectionArray = {}; //to track sections of teams
     let PatrolArray = []; //ids of patrol models
+    let CommandDiceArray = [];
+    let CommandDicePoints = [];
 
     let hexMap = {}; 
     let edgeArray = [];
@@ -1115,6 +1117,25 @@ const CoC = (() => {
             columnLabel = (columnLabel % 2 === 0) ? 1:2; //swaps odd and even
         }
 
+        if (edgeArray[0] === 0) {
+            //all on right side display
+            let x = Math.floor((pageInfo.width + edgeArray[1]) / 2);
+            //setup location for Chain of Command Dice
+            y += 66.9658278242677;
+            CommandDicePoints[0] = new Point(x,y);
+            CommandDicePoints[1] = new Point(x,y + pageInfo.height/2);
+        } else {
+            //players on 1 side or other
+
+        }
+
+
+
+        }
+
+
+
+
         BuildTerrainArray();
 
         let taKeys = Object.keys(TerrainArray);
@@ -2046,7 +2067,6 @@ log("Other side of Partial LOS Blocking Terrain")
                     closest[1].dist = dist;
                 }
             }
-log(closest)
             //now draw lines to each of closest and past it
             for (let j=0;j<2;j++) {
                 lineID = DrawLine(closest[j].id,patrol1.id,4,"objects","JumpOff");
@@ -2091,7 +2111,7 @@ log(closest)
                     dy = py;
                 }
             }
-            x1 = x2;
+            x1 = x2; //starts line at patrol, and goes back to edge of map (dx or dy)
             y1 = y2;
             x2 = dx;
             y2 = dy;
@@ -2170,6 +2190,110 @@ log(closest)
     }
 
 
+    const CommandDice = (msg) => {
+        for (let i=0;i<CommandDiceArray.length;i++) {
+            let obj = CommandDiceArray[i];
+            obj.remove();
+        }
+        //ResetActivations();
+        let playerID = msg.playerid;
+        let nation = state.CoC.players[playerID]; //set in initial Rolld6
+        let player = (Allies.includes(nation)) ? 0:1;
+        if (!nation) {nation = "Neutral"};
+        SetupCard("New Phase","",nation);
+        let number = state.CoC.commandDice[player];
+        let rolls = [];
+        let fives = 0;
+        let sixes = 0;
+        let command = [];
+        for (let i=0;i<number;i++) {
+            let roll = randomInteger(6);
+            rolls.push(roll);
+            if (roll === 5) {
+                fives += 1
+            } else if (roll === 6) {
+                sixes += 1
+            } else {
+                command.push(roll);
+            }
+        }
+        rolls.sort();
+        command.sort();
+        let line = "";
+        let flip = false;
+        if (rolls[0] > 4) {flip = true};
+        for (let i=0;i<rolls.length;i++) {
+            if (i > 0 && rolls[i] > 4 && flip === false) {
+                line += "| ";
+                flip = true;
+            }
+            line += DisplayDice(rolls[i],nation,30) + " ";
+        }
+        outputCard.body.push(line);
+        if (fives > 0 || sixes > 1) {
+            outputCard.body.push("[hr]");
+        }
+        if (fives > 0) {
+            outputCard.body.push(fives + " Added to Chain of Command");
+            state.CoC.CoCPoints[player] += fives;
+            outputCard.body.push("Total: " + state.CoC.CoCPoints[player]);
+        }
+        if (sixes > 1) {
+            outputCard.body.push(nation + " Retains Initiative for next Phase");
+        }
+        if (sixes > 2) {
+            outputCard.body.push("This is also the final Phase of the Turn");
+        }
+        if (sixes > 3) {
+            outputCard.body.push("Player gains a complete Chain of Command Dice");
+            state.CoC.CoCPoints[player] += 6;
+            let ran = randomInteger(6);
+            outputCard.body.push("A Random Event Occurs")
+            if (ran === 1) {
+                outputCard.body.push("Random Mortar Barrage");
+                outputCard.body.push("Consult Book");
+            } else if (ran === 2) {
+                outputCard.body.push("Jabos! Aircraft overhead, hit the dirt!");
+                outputCard.body.push("Nobody knows whose planes they are but movement is halted for this Phase and the next. Other activity continues as normal.");
+            } else if (ran === 3) {
+                outputCard.body.push("Fire! A building catches fire. Consult Book");
+            } else if (ran === 4) {
+                outputCard.body.push("A true patriot (or vile collaborator) has informed you where one of your opponent’s Units is lurking. Your opponent must place one of his as yet un‐deployed Units on the table immediately. He may choose which Jump‐Off Point they deploy to.");
+            } else if (ran === 5) {
+                outputCard.body.push("It has begun to rain very heavily. Visibility is reduced to 18” for the remainder of this Turn. At the end of the Turn roll a D6 and consult Book");
+            } else if (ran === 6) {
+                outputCard.body.push("Your men have discovered a cache of fine wine buried by its rightful owner and intended to be dug up at the end of the war. Sadly for him, it won’t be there when he returns. Fortunately for you, your Force Morale increases by one point. Bottoms Up!");
+                state.CoC.forceMorale[player] += 1;
+            }
+        }
+        //UpdateDisplay(player); //updates CoC Points, Force Morale
+        let pos = DeepCopy(CommandDicePoints[player]);
+        pos.y += 66.9658278242677;
+        pos.x -= (Math.floor(command.length - 1)/2) * 75.1985619844599;
+        sendPing(pos.x,pos.y, Campaign().get('playerpageid'), null, true); 
+        for (let i=0;i<command.length;i++) {
+            let roll = command[i];
+            roll = roll.toString();
+            let tablename = Nations[nation].dice;
+            let table = findObjs({type:'rollabletable', name: tablename})[0];
+            let obj = findObjs({type:'tableitem', _rollabletableid: table.id, name: roll })[0];
+            let imageURL = getCleanImgSrc(obj.get('avatar'));
+            let diceObj = createObj("graphic", {
+                left: pos.x,
+                top: pos.y,
+                width: 70,
+                height: 70,
+                isdrawing: true,
+                pageid: Campaign().get("playerpageid"),
+                imgsrc: imageURL,
+                layer: "objects",
+            });
+            toFront(diceObj);
+            pos.x += 75.1985619844599;
+            CommandDiceArray.push(diceObj);
+        }
+        PrintCard();
+    }
 
 
     const changeGraphic = (tok,prev) => {
