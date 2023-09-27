@@ -9,6 +9,7 @@ const CoC = (() => {
     let ModelArray = {}; //Individual Models, Tanks etc
     let TeamArray = {}; //Teams of Models
     let SectionArray = {}; //to track sections of teams
+    let PatrolArray = []; //ids of patrol models
 
     let hexMap = {}; 
     let edgeArray = [];
@@ -570,6 +571,7 @@ const CoC = (() => {
             } else {
                 name = token.get("name");
             }
+            if (type === "Jump Off Point") {name = "Jump Off Point"};
             this.name = name;
             this.id = tokenID;
             this.charID = charID;
@@ -1257,6 +1259,9 @@ const CoC = (() => {
             }
             let model = new Model(token.id,sectionID,teamID,true);
             team.add(model);
+            if (model.type === "Patrol" && PatrolArray.includes(model.id) === false) {
+                PatrolArray.push(model.id);
+            }
         });
 
 
@@ -1717,6 +1722,7 @@ log("Other side of Partial LOS Blocking Terrain")
         ModelArray = {};
         TeamArray = {};
         SectionArray = {};
+        PatrolArray = [];
         //clear token info
         let tokens = findObjs({
             _pageid: Campaign().get("playerpageid"),
@@ -1789,14 +1795,36 @@ log("Other side of Partial LOS Blocking Terrain")
         let refToken = findObjs({_type:"graphic", id: tokenIDs[0]})[0];
         let refChar = getObj("character", refToken.get("represents")); 
         let nation = Attribute(refChar,"nation");
+        let type = Attribute(refChar,"type");
+        if (type === "Patrol") {sectionName = "Patrol"};
+        if (type === "Jump Off Point") {sectionName = "Jump Off Point"}
         let player = (Allies.includes(nation)) ? 0:1;
         let sectionID = stringGen();
         let statusNum = parseInt(state.CoC.unitnumbers[player]);
-        statusNum += 1;
+        if (type !== "Patrol" && type !== "Jump Off Point") {
+            statusNum += 1;
+        }
         state.CoC.unitnumbers[player] = statusNum;
         let statusmarkers = Nations[nation].platoonmarkers[statusNum];
         section = new Section(player,nation,sectionID,sectionName,core);
-        if (unitComp === "Leader") {
+        if (unitComp === "Patrol" || unitComp === "Jump Off Point") {
+            let team = new Team(player,nation,stringGen(),sectionName,sectionID);
+            for (let i=0;i<tokenIDs.length;i++) {
+                let model = new Model(tokenIDs[i],sectionID,team.id,false);
+                team.add(model);
+                if (model.type === "Patrol" && PatrolArray.includes(model.id) === false) {
+                    PatrolArray.push(model.id);
+                }
+                let gmn = core + ";" + sectionName + ";" + sectionID + ";" + sectionName + ";" + team.id;
+                model.token.set({
+                    name: model.name,
+                    tint_color: "transparent",
+                    showname: true,
+                    gmnotes: gmn,
+                });
+            }
+            section.add(team);
+        } else if (unitComp === "Leader") {
             teamName = sectionName;
             let team = new Team(player,nation,stringGen(),sectionName,sectionID);
             let model = new Model(refToken.id,sectionID,team.id,false);
@@ -1989,65 +2017,20 @@ log("Other side of Partial LOS Blocking Terrain")
         }
     }
 
-
-
-
-
-
-
-
-
-
-    const changeGraphic = (tok,prev) => {
-        if (tok.get('subtype') === "token") {
-            //RemoveLines();
-            log(tok.get("name") + " moving");
-            if ((tok.get("left") !== prev.left) || (tok.get("top") !== prev.top)) {
-                let model = ModelArray[tok.id];
-                if (!model) {return};
-                let oldHex = model.hex;
-                let oldHexLabel = model.hexLabel;
-                let newLocation = new Point(tok.get("left"),tok.get("top"));
-                let newHex = pointToHex(newLocation);
-                let newHexLabel = newHex.label();
-                newLocation = hexToPoint(newHex); //centres it in hex
-                //let newRotation = oldHex.angle(newHex);
-                tok.set({
-                    left: newLocation.x,
-                    top: newLocation.y,
-                });
-                model.hex = newHex;
-                model.hexLabel = newHexLabel;
-                model.location = newLocation;
-                let index = hexMap[oldHexLabel].tokenIDs.indexOf(tok.id);
-                if (index > -1) {
-                    hexMap[oldHexLabel].tokenIDs.splice(index,1);
-                }
-                hexMap[newHexLabel].tokenIDs.push(tok.id);
-                model.hexList = [newHex];
-                if (model.size === "Large") {
-                    model.vertices = TokenVertices(tok);
-                    LargeTokens(model);
-                }
-            };
-        };
-    };
-
     const JumpOff = () => {
         //find patrol markers and create lines
         //lines removed once start 1st turn
         RemoveLines("JO");
         let lineIDArray = [];
-        let keys = Object.keys(ModelArray);
-        for (let i=0;i<keys.length;i++) {
-            let patrol1 = ModelArray[keys[i]];
-            if (patrol1.type !== "Patrol") {continue};
+        for (let i=0;i<PatrolArray.length;i++) {
+            let id1 = PatrolArray[i]
+            let patrol1 = ModelArray[id1];
             //for each patrol marker, find closest 2 enemy patrol markers
             let closest = [{id: "",dist: 1000},{id: "",dist: 1000}];
-            for (let j=0;j<keys.length;j++) {
-                let patrol2 = PatrolArray[keys[j]];
-                if (patrol2.type !== "Patrol") {continue};
-                if (patrol1.nation === patrol2.nation) {continue};
+            for (let j=0;j<PatrolArray.length;j++) {
+                let id2 = PatrolArray[j];
+                let patrol2 = ModelArray[id2];
+                if (patrol1.player === patrol2.player) {continue};
                 let dist = patrol1.hex.distance(patrol2.hex);
                 if (dist < closest[0].dist) {
                     if (closest[0].dist < closest[1].dist) {
@@ -2083,12 +2066,11 @@ log(closest)
         colour = ColourCodes[colour];
         let x1,x2,y1,y2,left,top,right,bottom,width,height;
         if (special === "JumpOff") {
-            log(ModelArray[id1].nation);
-            colour = Nations[ModelArray[id1].nation].borderColour;
-            x1 = hexMap[PatrolArray[id1].hexLabel].centre.x;
-            x2 = hexMap[PatrolArray[id2].hexLabel].centre.x;
-            y1 = hexMap[PatrolArray[id1].hexLabel].centre.y;
-            y2 = hexMap[PatrolArray[id2].hexLabel].centre.y;
+            colour = Nations[ModelArray[id2].nation].borderColour;
+            x1 = hexMap[ModelArray[id1].hexLabel].centre.x;
+            x2 = hexMap[ModelArray[id2].hexLabel].centre.x;
+            y1 = hexMap[ModelArray[id1].hexLabel].centre.y;
+            y2 = hexMap[ModelArray[id2].hexLabel].centre.y;
             left = 0;
             right = pageInfo.width;
             top = 0;
@@ -2109,6 +2091,8 @@ log(closest)
                     dy = py;
                 }
             }
+            x1 = x2;
+            y1 = y2;
             x2 = dx;
             y2 = dy;
         } else {
@@ -2173,7 +2157,7 @@ log(closest)
             let model = ModelArray[keys[i]];
             if (model.type === "Patrol") {
                 model.token.remove();
-            } else if (model.type === "Jump Off") {
+            } else if (model.type === "Jump Off Point") {
                 model.token.set({
                     layer: "map",
                 })
@@ -2187,6 +2171,79 @@ log(closest)
 
 
 
+
+    const changeGraphic = (tok,prev) => {
+        if (tok.get('subtype') === "token") {
+            //RemoveLines();
+            log(tok.get("name") + " moving");
+            if ((tok.get("left") !== prev.left) || (tok.get("top") !== prev.top)) {
+                let model = ModelArray[tok.id];
+                if (!model) {return};
+                let oldHex = model.hex;
+                let oldHexLabel = model.hexLabel;
+                let newLocation = new Point(tok.get("left"),tok.get("top"));
+                let newHex = pointToHex(newLocation);
+                let newHexLabel = newHex.label();
+                newLocation = hexToPoint(newHex); //centres it in hex
+                //let newRotation = oldHex.angle(newHex);
+                tok.set({
+                    left: newLocation.x,
+                    top: newLocation.y,
+                });
+                model.hex = newHex;
+                model.hexLabel = newHexLabel;
+                model.location = newLocation;
+                let index = hexMap[oldHexLabel].tokenIDs.indexOf(tok.id);
+                if (index > -1) {
+                    hexMap[oldHexLabel].tokenIDs.splice(index,1);
+                }
+                hexMap[newHexLabel].tokenIDs.push(tok.id);
+                model.hexList = [newHex];
+                if (model.size === "Large") {
+                    model.vertices = TokenVertices(tok);
+                    LargeTokens(model);
+                }
+                if (model.type === "Patrol") {
+                    let friendFlag = false;
+                    let enemyFlag = false;
+                    let colour = "transparent"
+                    let lockDowns = [];
+                    for (let i=0;i<PatrolArray.length;i++) {
+                        let id2 = PatrolArray[i];
+                        if (id2 === model.id) {continue};
+                        let patrol = ModelArray[id2];
+                        let dist = model.hex.distance(patrol.hex);
+log(patrol.name + ": " + dist)
+                        if (patrol.player === model.player) {
+                            if (dist <= 12) {
+                                friendFlag = true;
+                            }
+                        } else {
+                            if (dist <= 12) {
+                                enemyFlag = true;
+                                if (lockDowns.includes(id2) === false) {
+                                    lockDowns.push(id2);
+                                }
+                            }
+                        }
+                    }
+                    if (friendFlag === false) {
+                        //sendChat("",'Too Far from Friendly Patrol');
+                        colour = colours.red;
+                    }
+                    if (enemyFlag === true) {
+                        //sendChat("","Will be Locked Down");
+                        colour = colours.black;
+                        for (let i=0;i<lockDowns.length;i++) {
+                            let patrol = ModelArray[lockDowns[i]];
+                            patrol.token.set("tint_color",colour);
+                        }
+                    }
+                    model.token.set("tint_color",colour);
+                }
+            };
+        };
+    };
 
 
 
@@ -2239,9 +2296,11 @@ log(closest)
                 UnitCreation(msg);
                 break;
             case '!JumpOff':
-                JumpOff(msg);
+                JumpOff();
                 break;
-
+            case '!StartGame':
+                StartGame();
+                break;
 
         }
     };
