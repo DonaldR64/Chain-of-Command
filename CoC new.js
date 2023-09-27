@@ -115,14 +115,6 @@ const CoC = (() => {
         "Medium Crops": {name: "Medium Crops",height: 3,los: 0,cover: 1,move: 1,obstacle: 0},
         "Tall Crops": {name: "Tall Crops",height: 5,los: 1,cover: 2,move: 1,obstacle: 0},
 
-        "Short Hedge": {name: "Short Hedge",height: 3,los: 0,cover: 2,move: 0, obstacle: 1},
-        "Short Wall": {name: "Short Wall",height: 3,los: 0,cover: 3,move: 0, obstacle: 1},
-        "Medium Hedge": {name: "Medium Hedge",height: 5,los: 3,cover: 2,move: 0, obstacle: 2},
-        "Medium Wall": {name: "Medium Wall",height: 5,los: 3,cover: 3,move: 0, obstacle: 2},
-        "Tall Hedge": {name: "Tall Hedge",height: 10,los: 3,cover: 2,move: 0, obstacle: 3},
-        "Tall Wall": {name: "Tall Wall",height: 10,los: 3,cover: 3,move: 0, obstacle: 3},
-        "Bocage": {name: "Bocage",height: 10,los: 3,cover: 3,move: 0, obstacle: 3},
-
         "Ruins": {name: "Ruins",height: 5,los: 2,cover: 3,move: 1,obstacle: 0},
         "Stone Building A": {name: "Stone Building",height: 15,los: 3,cover: 3,move: 1,obstacle: 0},
         "Stone Building B": {name: "Stone Building",height: 25,los: 3,cover: 3,move: 1,obstacle: 0},
@@ -130,6 +122,17 @@ const CoC = (() => {
         "Wood Building B": {name: "Wood Building",height: 25,los: 3,cover: 2,move: 1,obstacle: 0},
     }
 
+    const LinearTerrainInfo = {
+        //used for terrain that is 1hex or less in width
+        "Ridgeline": {name: "Ridgeline",height: 0,los: 3,cover: 3,move: 0, obstacle: 0},
+        "Short Hedge": {name: "Short Hedge",height: 3,los: 0,cover: 2,move: 0, obstacle: 1},
+        "Short Wall": {name: "Short Wall",height: 3,los: 0,cover: 3,move: 0, obstacle: 1},
+        "Medium Hedge": {name: "Medium Hedge",height: 5,los: 3,cover: 2,move: 0, obstacle: 2},
+        "Medium Wall": {name: "Medium Wall",height: 5,los: 3,cover: 3,move: 0, obstacle: 2},
+        "Tall Hedge": {name: "Tall Hedge",height: 10,los: 3,cover: 2,move: 0, obstacle: 3},
+        "Tall Wall": {name: "Tall Wall",height: 10,los: 3,cover: 3,move: 0, obstacle: 3},
+        "Bocage": {name: "Bocage",height: 10,los: 3,cover: 3,move: 0, obstacle: 3},
+    }
 
     const simpleObj = (o) => {
         let p = JSON.parse(JSON.stringify(o));
@@ -1939,10 +1942,6 @@ log("Other side of Partial LOS Blocking Terrain")
                 }
             }
         }
-
-
-
-
 
     }
 
