@@ -166,7 +166,8 @@ section {
 .toggleweapon:not([value="Infantry + AT"]) ~ .weaponstwo,
 .toggleweapon:not([value="Infantry"]) ~ .weaponsthree,
 .toggleweapon:not([value="AT Weapon"]) ~ .weaponsfour,
-.toggleweapon:not([value="Gun"]) ~ .weaponsfive 
+.toggleweapon:not([value="Gun"]) ~ .weaponsfive, 
+.toggleweapon:not([value="None"]) ~ .weaponsnil
 {
     display:  none;
 }
