@@ -755,35 +755,23 @@ const CoC = (() => {
     ]
 
     const ModelDistance = (model1,model2) => {
-        let hexes1 = [model1.hex];
-        let hexes2 = [model2.hex];
-        if (model1.size === "Large") {
-            hexes1 = hexes1.concat(model1.hexList);
-        }
-        if (model2.size === "Large") {
-            hexes2 = hexes2.concat(model2.hexList);
-        }
+        let hexes = model2.hexList;
         let closestDist = Infinity;
-        let closestHex1 = model1.hex;
-        let closestHex2 = model2.hex;
-
-        for (let i=0;i<hexes1.length;i++) {
-            let hex1 = hexes1[i];
-            for (let j=0;j<hexes2.length;j++) {
-                let hex2 = hexes2[j];
-                let dist = hex1.distance(hex2);
-                if (dist < closestDist) {
-                    closestDist = dist;
-                    closestHex1 = hex1;
-                    closestHex2 = hex2;
-                }
+        let closestHex = model2.hex;
+        for (let j=0;j<hexes.length;j++) {
+            let hex2 = hexes2[j];
+            let dist = model1.hex.distance(hex2);
+            if (dist < closestDist) {
+                closestDist = dist;
+                closestHex = hex2;
             }
         }
-        //closestDist -= 1; //as its distance between bases
+        let theta = model1.hex.angle(closestHex);
+        let phi = Angle(theta - model1.token.get('rotation')); //angle from shooter to target taking into account shooters direction
         let info = {
             distance: closestDist,
-            hex1: closestHex1,
-            hex2: closestHex2,
+            closestHex: closestHex1,
+            angle: phi,
         }
         return info;
     }
@@ -1397,9 +1385,10 @@ const CoC = (() => {
             return result
         }
 
-        let md = ModelDistance(model1,model2);
+        let distanceInfo = ModelDistance(model1,model2);
+        let distanceT1T2 = distanceInfo.distance * MapScale; //in feet
+        let phi = distanceInfo.phi; //angle from model1 to model2 taking into account model1's rotation
 
-        let distanceT1T2 = md.distance * MapScale; //in feet
         let hex1 = hexMap[model1.hexLabel];
         let hex2 = hexMap[model2.hexLabel];
         let los = true;
@@ -1419,8 +1408,6 @@ log("Team2 H: " + model2Height)
         //interHexes will be hexes between shooter and target, not including their hexes or closest hexes for large tokens
         let lightCovers = [];
 
-        let theta = model1.hex.angle(model2.hex);
-        let phi = Angle(theta - model1.token.get('rotation')); //angle from shooter to target taking into account shooters direction
 log("Base Level: " + modelLevel)
         let sameTerrain = findCommonElements(hex1.terrainIDs,hex2.terrainIDs);
         let lastElevation = model1Height;
@@ -1510,8 +1497,16 @@ log(fm.name + " Player: " + fm.player)
             for (let t=0;t<fKeys.length;t++) {
                 let fm = ModelArray[fKeys[t]];
 log(fm.name + " Player: " + fm.player)
+log(fm.hexList)
+log(qrs)
                 if (fm.id === model1.id || fm.id === model2.id || fm.player === model1.player || fm.type !== "Vehicle") {continue};
-                enemyVehicle = findCommonElements(fm.hexList,interHexes); //will be true if LOS crosses 
+                for (let u=0;u<fm.hexList.length;u++) {
+                    if (fm.hexList[u].label() === qrs.label()) {
+                        enemyVehicle = true;
+                        break;
+                    }
+                }
+                log("Enemy Vehicle: " + enemyVehicle)
                 friendlyHeight = Math.max(fm.height,friendlyHeight);
             }
 
