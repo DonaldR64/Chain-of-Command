@@ -113,29 +113,15 @@ const CoC = (() => {
     //Obstacles will generally be move 0, but an obstacle #
 
     const MapTokenInfo = {
-        "Ploughed Field": {name: "Ploughed Field",height: 0,los:0,cover: 0,move: 1, obstacle: 0,linear: false},
-        "Medium Crops": {name: "Medium Crops",height: 3,los: 0,cover: 1,move: 1,obstacle: 0,linear: false},
-        "Tall Crops": {name: "Tall Crops",height: 5,los: 1,cover: 2,move: 1,obstacle: 0,linear: false},
+        "Ploughed Field": {name: "Ploughed Field",height: 0,los:0,cover: 0,move: 1, obstacle: 0},
+        "Medium Crops": {name: "Medium Crops",height: 3,los: 0,cover: 1,move: 1,obstacle: 0},
+        "Tall Crops": {name: "Tall Crops",height: 5,los: 1,cover: 2,move: 1,obstacle: 0},
 
         "Ruins": {name: "Ruins",height: 5,los: 2,cover: 3,move: 1,obstacle: 0,linear: false},
-        "Stone Building A": {name: "Stone Building",height: 15,los: 3,cover: 3,move: 1,obstacle: 0,linear: false},
-        "Stone Building B": {name: "Stone Building",height: 25,los: 3,cover: 3,move: 1,obstacle: 0,linear: false},
-        "Wood Building A": {name: "Wood Building",height: 15,los: 3,cover: 2,move: 1,obstacle: 0,linear: false},
-        "Wood Building B": {name: "Wood Building",height: 25,los: 3,cover: 2,move: 1,obstacle: 0,linear: false},
-        "Short Hedge": {name: "Short Hedge",height: 3,los: 0,cover: 2,move: 0, obstacle: 1,linear: true},
-        "Short Wall": {name: "Short Wall",height: 3,los: 0,cover: 3,move: 0, obstacle: 1,linear: true},
-        "Medium Hedge": {name: "Medium Hedge",height: 5,los: 3,cover: 2,move: 0, obstacle: 2,linear: true},
-        "Medium Wall": {name: "Medium Wall",height: 5,los: 3,cover: 3,move: 0, obstacle: 2,linear: true},
-        "Tall Hedge": {name: "Tall Hedge",height: 10,los: 3,cover: 2,move: 0, obstacle: 3,linear: true},
-        "Tall Wall": {name: "Tall Wall",height: 10,los: 3,cover: 3,move: 0, obstacle: 3,linear: true},
-        "Bocage": {name: "Bocage",height: 10,los: 3,cover: 3,move: 0, obstacle: 3,linear: true},
-
-
-    }
-
-    const LinearTerrainInfo = {
-        //used for terrain that is 1hex or less in width
-        "Ridgeline": {name: "Ridgeline",height: 0,los: 3,cover: 3,move: 0, obstacle: 0},
+        "Stone Building A": {name: "Stone Building",height: 15,los: 3,cover: 3,move: 1,obstacle: 0},
+        "Stone Building B": {name: "Stone Building",height: 25,los: 3,cover: 3,move: 1,obstacle: 0},
+        "Wood Building A": {name: "Wood Building",height: 15,los: 3,cover: 2,move: 1,obstacle: 0},
+        "Wood Building B": {name: "Wood Building",height: 25,los: 3,cover: 2,move: 1,obstacle: 0},
         "Short Hedge": {name: "Short Hedge",height: 3,los: 0,cover: 2,move: 0, obstacle: 1},
         "Short Wall": {name: "Short Wall",height: 3,los: 0,cover: 3,move: 0, obstacle: 1},
         "Medium Hedge": {name: "Medium Hedge",height: 5,los: 3,cover: 2,move: 0, obstacle: 2},
@@ -143,6 +129,8 @@ const CoC = (() => {
         "Tall Hedge": {name: "Tall Hedge",height: 10,los: 3,cover: 2,move: 0, obstacle: 3},
         "Tall Wall": {name: "Tall Wall",height: 10,los: 3,cover: 3,move: 0, obstacle: 3},
         "Bocage": {name: "Bocage",height: 10,los: 3,cover: 3,move: 0, obstacle: 3},
+
+
     }
 
     const simpleObj = (o) => {
@@ -1154,6 +1142,11 @@ const CoC = (() => {
                         let num = 0;
                         for (let i=0;i<5;i++) {
                             check = pointInPolygon(pts[i],polygon);
+                            if (i === 0 && check === true) {
+                                //centre pt is in hex, can skip rest
+                                num = 3;
+                                break;
+                            }
                             if (check === true) {num ++};
                         }
                         if (num > 2) {
@@ -1337,7 +1330,7 @@ const CoC = (() => {
                 los: t.los,
                 move: t.move,
                 obstacle: t.obstacle,
-                linear: t.linear,
+                linear: false,
             };
             TerrainArray[id] = info;
         });
@@ -1386,7 +1379,8 @@ const CoC = (() => {
 	}
 
 
-    const LOS = (id1,id2) => {
+    const LOS = (id1,id2,special) => {
+        if (!special) {special = ""}; //used to track certian things eg. Flamethrowers
         let model1 = ModelArray[id1];
         let model2 = ModelArray[id2];       
 
@@ -1491,7 +1485,7 @@ log("Intervening Higher Terrain");
                 smokeGrenade = true;
             }
 
-            //check for intervening friendlies in 2 hexes of interHex
+            //check for intervening friendlies in 2 hexes of interHex - can ignore if same team
             //if find one, flag and note height
             let friendlyFlag = false;
             let enemyVehicle = false;
@@ -1499,7 +1493,7 @@ log("Intervening Higher Terrain");
             for (let t=0;t<fKeys.length;t++) {
                 let fm = ModelArray[fKeys[t]];
 log(fm.name + " Player: " + fm.player)
-                if (fm.id === model1.id || fm.id === model2.id || fm.player !== model1.player) {continue};
+                if (fm.id === model1.id || fm.id === model2.id || fm.player !== model1.player || fm.teamID === model1.teamID) {continue};
                 let fHexes = fm.hexList;
                 for (let u=0;u<fHexes.length;u++) {
                     let fHex = fHexes[u];
@@ -1508,12 +1502,14 @@ log("Models Hex: " + fHex + " / Distance " + dis)
                     if (dis < 2) {
                         friendlyFlag = true;
                         friendlyHeight = Math.max(fm.height,friendlyHeight);
+                        if (special === "Flamethrower") {friendlyHeight = 100}; //basically cant fire Flamethrower over heads of friendlies
                     }
                 }
             }
             //check for intervening enemy vehicle blocking LOS
             for (let t=0;t<fKeys.length;t++) {
                 let fm = ModelArray[fKeys[t]];
+
 log(fm.name + " Player: " + fm.player)
 log(fm.hexList)
 log(qrs)
