@@ -2033,9 +2033,157 @@ log("Other side of Partial LOS Blocking Terrain")
         };
     };
 
+    const JumpOff = () => {
+        //find patrol markers and create lines
+        //lines removed once start 1st turn
+        RemoveLines("JO");
+        let lineIDArray = [];
+        let keys = Object.keys(ModelArray);
+        for (let i=0;i<keys.length;i++) {
+            let patrol1 = ModelArray[keys[i]];
+            if (patrol1.type !== "Patrol") {continue};
+            //for each patrol marker, find closest 2 enemy patrol markers
+            let closest = [{id: "",dist: 1000},{id: "",dist: 1000}];
+            for (let j=0;j<keys.length;j++) {
+                let patrol2 = PatrolArray[keys[j]];
+                if (patrol2.type !== "Patrol") {continue};
+                if (patrol1.nation === patrol2.nation) {continue};
+                let dist = patrol1.hex.distance(patrol2.hex);
+                if (dist < closest[0].dist) {
+                    if (closest[0].dist < closest[1].dist) {
+                        closest[1].id = closest[0].id;
+                        closest[1].dist = closest[0].dist;
+                    }
+                    closest[0].id = patrol2.id;
+                    closest[0].dist = dist;
+                    continue;
+                }
+                if (dist < closest[1].dist) {
+                    closest[1].id = patrol2.id;
+                    closest[1].dist = dist;
+                }
+            }
+log(closest)
+            //now draw lines to each of closest and past it
+            for (let j=0;j<2;j++) {
+                lineID = DrawLine(closest[j].id,patrol1.id,4,"objects","JumpOff");
+                lineIDArray.push(lineID);
+            }
+        }
+        state.CoC.JOLines = lineIDArray;
+        SetupCard("Jump Off Points","","Neutral");
+        outputCard.body.push("Take Turns Placing Jump Off Points");
+        outputCard.body.push("Click button when done placing all");
+        ButtonInfo("Start Game","!StartGame");
+        PrintCard();
+    }
+
+    const DrawLine = (id1,id2,colour,layer,special) => {
+        let ColourCodes = ["#00ff00","#ffff00","#ff0000","#00ffff","#000000"];
+        colour = ColourCodes[colour];
+        let x1,x2,y1,y2,left,top,right,bottom,width,height;
+        if (special === "JumpOff") {
+            log(ModelArray[id1].nation);
+            colour = Nations[ModelArray[id1].nation].borderColour;
+            x1 = hexMap[PatrolArray[id1].hexLabel].centre.x;
+            x2 = hexMap[PatrolArray[id2].hexLabel].centre.x;
+            y1 = hexMap[PatrolArray[id1].hexLabel].centre.y;
+            y2 = hexMap[PatrolArray[id2].hexLabel].centre.y;
+            left = 0;
+            right = pageInfo.width;
+            top = 0;
+            bottom = pageInfo.height;
+            let dx, dy, py, vx, vy;
+            vx = x2 - x1;
+            vy = y2 - y1;
+            dx = vx < 0 ? left : right;
+            dy = py = vy < 0 ? top : bottom;
+            if (vx === 0) {
+                dx = x1;
+            } else if (vy === 0){
+                dy = y1;
+            } else {
+                dy = y1 + (vy / vx) * (dx - x1);
+                if (dy < top || dy > bottom) {
+                    dx = x1 + (vx / vy) * (py - y1);
+                    dy = py;
+                }
+            }
+            x2 = dx;
+            y2 = dy;
+        } else {
+            x1 = hexMap[ModelArray[id1].hexLabel].centre.x;
+            x2 = hexMap[ModelArray[id2].hexLabel].centre.x;
+            y1 = hexMap[ModelArray[id1].hexLabel].centre.y;
+            y2 = hexMap[ModelArray[id2].hexLabel].centre.y;
+        }
+
+        width = (x1 - x2);
+        height = (y1 - y2);
+        left = width/2;
+        top = height/2;
+
+        let path = [["M",x1,y1],["L",x2,y2]];
+        path = path.toString();
+
+        let newLine = createObj("path", {   
+            _pageid: Campaign().get("playerpageid"),
+            _path: path,
+            layer: layer,
+            fill: colour,
+            stroke: colour,
+            stroke_width: 5,
+            left: left,
+            top: top,
+            width: width,
+            height: height,
+        });
+        toFront(newLine);
+        let id = newLine.id;
+        return id;
+    }
+
+    const RemoveLines = (type) => {
+        let lineIDArray;
+        if (type === "JO") {
+            lineIDArray = state.CoC.JOLines;
+            state.CoC.JOLines = []; 
+        } else {
+            lineIDArray = state.CoC.LOSLines;
+            state.CoC.LOSLines = []; 
+        }
+        if (!lineIDArray) {
+            state.CoC.LOSLines = [];
+            state.CoC.LOSLines = []; 
+            return;
+        }
+        for (let i=0;i<lineIDArray.length;i++) {
+            let id = lineIDArray[i];
+            let path = findObjs({_type: "path", id: id})[0];
+            if (path) {
+                path.remove();
+            }
+        }
+    }
+
+    const StartGame = () => {
+        RemoveLines("JO");
+        let keys = Object.keys(ModelArray);
+        for (let i=0;i<keys.length;i++) {
+            let model = ModelArray[keys[i]];
+            if (model.type === "Patrol") {
+                model.token.remove();
+            } else if (model.type === "Jump Off") {
+                model.token.set({
+                    layer: "map",
+                })
+            }
+        }
+       
 
 
 
+    }
 
 
 
@@ -2090,6 +2238,11 @@ log("Other side of Partial LOS Blocking Terrain")
             case '!UnitCreation':
                 UnitCreation(msg);
                 break;
+            case '!JumpOff':
+                JumpOff(msg);
+                break;
+
+
         }
     };
 
