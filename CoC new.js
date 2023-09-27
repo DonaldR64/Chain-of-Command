@@ -1359,7 +1359,7 @@ const CoC = (() => {
         }
         let name = rankName + Surname(nation);
         if (crew === true) {
-            name = "Cpl. " + Surname(nation) + " Crew";
+            name = "Cpl. " + Surname(nation) + " & Crew";
         } 
 
         return name;
@@ -1956,6 +1956,48 @@ log("Other side of Partial LOS Blocking Terrain")
     }
 
 
+    const RollD6 = (msg) => {
+        let Tag = msg.content.split(";");
+        PlaySound("Dice");
+        let roll = randomInteger(6);
+        if (Tag.length === 1) {
+            let playerID = msg.playerid;
+            let nation = "Neutral";
+            if (!state.CoC.players[playerID] || state.CoC.players[playerID] === undefined) {
+                if (msg.selected) {
+                    let id = msg.selected[0]._id;
+                    if (id) {
+                        let tok = findObjs({_type:"graphic", id: id})[0];
+                        let char = getObj("character", tok.get("represents")); 
+                        nation = Attribute(char,"nation");
+                        state.CoC.players[playerID] = nation;
+                    }
+                } else {
+                    sendChat("","Click on one of your tokens then select Roll again");
+                    return;
+                }
+            } else {
+                nation = state.CoC.players[playerID];
+            }
+            let res = "/direct " + DisplayDice(roll,nation,40);
+            sendChat("player|" + playerID,res);
+        } else {
+            let type = Tag[1];
+            //type being used for times where fed back by another function
+            
+
+        }
+    }
+
+
+
+
+
+
+
+
+
+
     const changeGraphic = (tok,prev) => {
         if (tok.get('subtype') === "token") {
             //RemoveLines();
@@ -2042,50 +2084,11 @@ log("Other side of Partial LOS Blocking Terrain")
             case '!ClearState':
                 ClearState();
                 break;
-            case '!StartNew':
-                StartNewGame(msg);
-                break;
-            case '!Lockdown':
-                Lockdown(msg);
-                break;
-            case '!AddAbilities':
-                AddAbilities(msg);
-                break;
-            case '!SetJumpOff':
-                SetJumpOff(msg);
-                break;
-            case '!StartGame':
-                StartGame();
-                break;
             case '!Roll':
                 RollD6(msg);
                 break;
-            case '!CommandDice':
-                CommandDice(msg);
-                break;
             case '!UnitCreation':
                 UnitCreation(msg);
-                break;
-            case '!Activate':
-                UnitActivation(msg);
-                break;
-            case '!Order':
-                Order(msg);
-                break;
-            case '!LeaderSelf':
-                LeaderSelf(msg);
-                break;
-            case '!Rejoin':
-                Rejoin(msg);
-                break;
-            case '!LeaderJoin':
-                LeaderJoin(msg);
-                break;
-            case '!FinalizeMarker':
-                FinalizeMarker(msg);
-                break;
-            case '!Fire':
-                Fire(msg);
                 break;
         }
     };
