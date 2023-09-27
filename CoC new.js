@@ -1220,10 +1220,6 @@ const CoC = (() => {
         }
     }
 
-
-
-
-
 //Shock tokens
 
     const TA = () => {
