@@ -1,5 +1,5 @@
 const CoC = (() => { 
-    const version = '1.9.23';
+    const version = '1.9.27';
     if (!state.CoC) {state.CoC = {}};
 
     const pageInfo = {name: "",page: "",gridType: "",scale: 0,width: 0,height: 0};
