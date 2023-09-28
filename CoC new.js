@@ -1070,7 +1070,7 @@ const CoC = (() => {
                 edgeArray.unshift(0);
             }
         } else if (edgeArray.length === 2) {
-            edgeArray.sort();
+            edgeArray.sort((a,b) => parseInt(a) - parseInt(b));
         } else if (edgeArray.length > 2) {
             sendChat("","Error with > 2 edges, Fix and Reload API");
             return
@@ -1116,25 +1116,25 @@ const CoC = (() => {
             rowLabelNum += 1;
             columnLabel = (columnLabel % 2 === 0) ? 1:2; //swaps odd and even
         }
-
+        //setup locations for Chain of Command Dice
+        let a = 0;
+        let b = 1;
+        if (state.CoC.side === "Right") {
+            a = 1;
+            b = 0;
+        }
+        let y = 43.8658278242683 + 66.965827824267;
+        let x = Math.floor((pageInfo.width + edgeArray[1])/2);
         if (edgeArray[0] === 0) {
             //all on right side display
-            let x = Math.floor((pageInfo.width + edgeArray[1]) / 2);
-            //setup location for Chain of Command Dice
-            y += 66.9658278242677;
-            CommandDicePoints[0] = new Point(x,y);
-            CommandDicePoints[1] = new Point(x,y + pageInfo.height/2);
+            CommandDicePoints[a] = new Point(x,y);
+            CommandDicePoints[b] = new Point(x,y + pageInfo.height/2);
         } else {
             //players on 1 side or other
-
+            let x1 = Math.floor((edgeArray[0])/2);
+            CommandDicePoints[a] = new Point(x1,y);
+            CommandDicePoints[b] = new Point(x,y);
         }
-
-
-
-        }
-
-
-
 
         BuildTerrainArray();
 
@@ -1780,6 +1780,7 @@ log("Other side of Partial LOS Blocking Terrain")
             CoCPoints: [0,0],
             commandDice: [5,5],
             unitnumbers: [0,0],
+            sides: [],
         }
         sendChat("","Cleared State/Arrays");
     }
@@ -1827,6 +1828,11 @@ log("Other side of Partial LOS Blocking Terrain")
         }
         state.CoC.unitnumbers[player] = statusNum;
         let statusmarkers = Nations[nation].platoonmarkers[statusNum];
+        let side = (Allies.includes(nation)) ? 0:1;
+        if (state.CoC.nations[side].includes(nation) === false) {
+            state.CoC.nations[side].push(nation);
+        }
+
         section = new Section(player,nation,sectionID,sectionName,core);
         if (unitComp === "Patrol" || unitComp === "Jump Off Point") {
             let team = new Team(player,nation,stringGen(),sectionName,sectionID);
@@ -2206,6 +2212,7 @@ log("Other side of Partial LOS Blocking Terrain")
         let fives = 0;
         let sixes = 0;
         let command = [];
+        PlaySound("Dice");
         for (let i=0;i<number;i++) {
             let roll = randomInteger(6);
             rolls.push(roll);
@@ -2370,6 +2377,50 @@ log(patrol.name + ": " + dist)
     };
 
 
+    const SetupGame = (msg) => {
+        let Tag = msg.content.split(";");
+        let alliedSide = Tag[1];
+        state.CoC.side = alliedSide;
+        let alliedMorale = Tag[2];
+        let axisMorale = Tag[3];
+        state.CoC.forceMorale = [alliedMorale,axisMorale];
+        SetupCard("Setup","","Neutral");
+        outputCard.body.push("Allied Morale: " + alliedMorale);
+        outputCard.body.push("Axis Morale: " + axisMorale);
+        
+
+        PrintCard();
+    }
+
+    const ShowMorale = () => {
+        SetupCard("Chain of Command","","Neutral");
+        for (let i=0;i<2;i++) {
+            let nations = state.CoC.nations[i].toString();
+            nations = nations.replace(","," + ");
+            outputCard.body.push("[U]" + nations + "[/u]");
+            outputCard.body.push("Morale: " + state.CoC.forceMorale[i]);
+            let coc = state.CoC.CoCPoints[i];
+            let dice = 0;
+            if (coc > 5) {
+                do {
+                    coc -= 6;
+                    dice++
+                }
+                while (coc > 5)
+            }
+            if (dice > 0) {
+                outputCard.body.push("Full CoC Dice: " + dice);
+            }
+            outputCard.body.push("CoC Points: " + coc);
+            if (i === 0) {
+                outputCard.body.push("[hr]");
+            }
+        }
+        PrintCard();
+    }
+
+
+
 
 
 /*
@@ -2424,6 +2475,15 @@ log(patrol.name + ": " + dist)
                 break;
             case '!StartGame':
                 StartGame();
+                break;
+            case '!CommandDice':
+                CommandDice(msg);
+                break;
+            case '!SetupGame':
+                SetupGame(msg);
+                break;
+            case '!ShowMorale':
+                ShowMorale();
                 break;
 
         }
