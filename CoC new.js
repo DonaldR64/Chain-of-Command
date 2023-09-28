@@ -1781,6 +1781,7 @@ log("Other side of Partial LOS Blocking Terrain")
             commandDice: [5,5],
             unitnumbers: [0,0],
             sides: [],
+            labmode: false,
         }
         sendChat("","Cleared State/Arrays");
     }
@@ -2373,6 +2374,13 @@ log(patrol.name + ": " + dist)
                     model.token.set("tint_color",colour);
                 }
             };
+            if ((tok.get("height") !== prev.height || tok.get("width") !== prev.width) && state.CoC.labmode === false) {
+                let model = ModelArray[tok.id];
+                if (!model) {return};
+                tok.set("height",prev.height);
+                tok.set("width",prev.width);
+            }
+
         };
     };
 
@@ -2419,7 +2427,10 @@ log(patrol.name + ": " + dist)
         PrintCard();
     }
 
-
+    const ToggleLab = () => {
+        state.CoC.labmode = (state.CoC.labmode === true) ? false:true;
+        sendChat("","Toggled to " + state.CoC.labmode)
+    }
 
 
 
@@ -2484,6 +2495,9 @@ log(patrol.name + ": " + dist)
                 break;
             case '!ShowMorale':
                 ShowMorale();
+                break;
+            case '!ToggleLab':
+                ToggleLab();
                 break;
 
         }
