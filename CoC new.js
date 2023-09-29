@@ -502,16 +502,19 @@ const CoC = (() => {
 
         add(model) {
             if (this.modelIDs.includes(model.id) === false) {
-                this.modelIDs.push(model.id);
+                if (model.special.includes("Crew")) {
+                    this.modelIDs.unshift(model.id);
+                } else {
+                    this.modelIDs.push(model.id);
+                }
             }
         }
 
         leader() {
-            //sort team, 0 indexed token gets aura
             let leader = ModelArray[this.modelIDs[0]];
             leader.token.set({
                 aura1_color: colours.green,
-                aura1_radius: 0.1,
+                aura1_radius: 2,
                 showplayers_aura1: true,
             })
         }
@@ -1969,18 +1972,9 @@ log("Other side of Partial LOS Blocking Terrain")
             }
             for (let i=0;i<section.teamIDs.length;i++) {
                 let team = TeamArray[section.teamIDs[i]];
-                let leader = ModelArray[team.modelIDs[0]];
-                leader.token.set({
-                    aura1_color: colours.green,
-                    aura1_radius: 2,
-                    showplayers_aura1: true,
-                })
+                team.leader();
             }
-
-
-
         }
-
     }
 
 
