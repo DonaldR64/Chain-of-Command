@@ -1965,13 +1965,20 @@ log("Other side of Partial LOS Blocking Terrain")
                     });
                     model.token.set("statusmarkers",statusmarkers);
                 }
-                ModelArray[group[0]].token.set({
-                    aura1_color: colours.green,
-                    aura1_radius: 0.1,
-                    showplayers_aura1: true,
-                })
                 section.add(team);
             }
+            for (let i=0;i<section.teamIDs.length;i++) {
+                let team = TeamArray[section.teamIDs[i]];
+                let leader = ModelArray[team.modelIDs[0]];
+                leader.token.set({
+                    aura1_color: colours.green,
+                    aura1_radius: 2,
+                    showplayers_aura1: true,
+                })
+            }
+
+
+
         }
 
     }
