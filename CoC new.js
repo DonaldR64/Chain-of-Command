@@ -1939,65 +1939,38 @@ log("Other side of Partial LOS Blocking Terrain")
                 let group = groups[i];
                 let letters = ["A","B","C","D","E","F","G"];
                 let teamName = sectionName + "/" + letters[i];
-                let team = new Team(player,nation,stringGen(),sectionName,sectionID);
+                let team = new Team(player,nation,stringGen(),teamName,sectionID);
                 let gmn = core + ";" + sectionName + ";" + sectionID + ";" + teamName + ";" + team.id;
-/////work from here
-                let teamID = team.id;
-                let nco = false;
-                for (let j=0;j<group.length;j++) {
-                    let base = BaseArray[group[j]];
-                    let name = base.charName;
-                    let hp = parseInt(base.token.get("currentSide")) + 1; //# men in token
-                    if (base.rank > 0) {
-                        name = OfficerName(base);
-                        nco = true;
-                        hp = base.initiative;
-                        tName = name;
-                    } else {
-                        for (let c=0;c<CharacterCountries.length;c++) {
-                            let cName = CharacterCountries[c];
-                            if (name.includes(cName)) {
-                                name = name.replace(cName,"");
-                            }
-                        }
-                        tName = name;
-                        if (group.length > 1) {
-                            name += "/" + (j+1);
-                        }
+                for (let i=0;i<group.length;i++) {
+                    let model = new Model(group[i],sectionID,team.id,false);
+                    team.add(model);
+                    let hp = 1;
+                    if (model.special.includes("Crew")) {
+                        //should be "Crew of X"
+                        let index = model.special.indexOf("Crew") + 8;
+                        hp = parseInt(model.special.charAt(index));
+                    }            
+                    if (model.initiative > 0) {
+                        hp = model.initiative;
                     }
-                    base.name = name;                    
-                    base.token.set({
-                        name: name,
+                    model.token.set({
+                        name: model.name,
                         tint_color: "transparent",
                         showplayers_bar1: true,
                         showname: true,
+                        bar1_value: hp,
                         showplayers_bar3: true,
                         bar3_value: 0,
-                        bar1_value: hp,
-                    })
-                    if (nco === true || j === 0) {
-                        base.token.set({
-                            aura1_color: colours.green,
-                            aura1_radius: 0.1,
-                            showplayers_aura1: true,
-                        })
-                    }
-                    base.token.set("statusmarkers",statusmarkers);
-                    team.bases.push(base.id);
-                    if (nco === true) {
-                        unit.nco = base.id;
-                        team.leader = true;
-                    }
-                    team.name = tName;
-                    if (base.special.includes("Crew")) {
-                        team.crew = true;
-                    }
-                    let gmn = tName + ";" + teamID + ";" +  unitName + ";" + unit.id + ";" + core;
-                    base.token.set("gmnotes",gmn);
-                    base.unitID = unit.id;
-                    base.teamID = team.id;
-                    unit.add(team);
+                        gmnotes: gmn,
+                    });
+                    model.token.set("statusmarkers",statusmarkers);
                 }
+                ModelArray[group[0]].token.set({
+                    aura1_color: colours.green,
+                    aura1_radius: 0.1,
+                    showplayers_aura1: true,
+                })
+                section.add(team);
             }
         }
 
