@@ -1852,7 +1852,7 @@ log("Other side of Partial LOS Blocking Terrain")
                 });
             }
             section.add(team);
-        } else if (unitComp === "Leader") {
+        } else if (unitComp === "Sr. Leader") {
             teamName = sectionName;
             let team = new Team(player,nation,stringGen(),sectionName,sectionID);
             let model = new Model(refToken.id,sectionID,team.id,false);
@@ -1901,46 +1901,38 @@ log("Other side of Partial LOS Blocking Terrain")
             }
             section.add(team);
         } else if (unitComp === "Section") {
-            //sort into units in squad based on spacing
-            //when creating units, need to seperate each subunit on map
-            let groups = [];
-            let sortedIDs = [];
+            let tokenInfo = {};
             for (let i=0;i<tokenIDs.length;i++) {
                 let id = tokenIDs[i];
-                let m1 = ModelArray[id];
-                if (sortedIDs.includes(id)) {continue};
-                //check if adjacent to a team in existing group
+                let token = findObjs({_type:"graphic", id: id})[0];
+                let hex = pointToHex(new Point(token.get("left"),token.get("top")));
+                tokenInfo[id] = {
+                    token: token,
+                    hex: hex,
+                }
+            }
+            
+            let groups = [];
+            tokenIDs.forEach((id) => {
+                let grouped = false;
+                //see if can sort into existing group
                 sortLoop1:
-                for (let j=0;j<groups.length;j++) {
-                    let group = groups[j];
-                    for (let k=0;k<group.length;k++) {
-                        let id2 = group[k];
-                        let m2 = ModelArray[id2];
-                        let dist = ModelDistance(m1,m2).distance;
-                        if (dist >= 1) {continue};
-                        sortedIDs.push(id);
-                        groups[j].push(id);
-                        break sortLoop1
+                for (let i=0;i<groups.length;i++) {
+                    group = groups[i];
+                    for (let j=0;j<group.length;j++) {
+                        let id2 = group[j];
+                        if (tokenInfo[id].hex.distance(tokenInfo[id2].hex) <= 1) {
+                            grouped = true;
+                            groups[i].push(id);
+                            break sortLoop1;
+                        }
                     }
                 }
-                if (sortedIDs.includes(id)) {continue};
-                //check if any adjacent teams which will be themselves unsorted
-                //if so, the 2 form a group
-                //if not, id becomes its own group
-                for (let j=0;j<tokenIDs.length;j++) {
-                    let id2 = tokenIDs[j];
-                    let m2 = ModelArray[id2];
-                    if (id2 === id) {continue};
-                    let dist = ModelDistance(m1,m2).distance;
-                    if (dist >= 1) {continue};
-                    sortedIDs.push(id);
-                    sortedIDs.push(id2);
-                    groups.push([id,id2]);
-                    break;
+                if (grouped === false) {
+                    //create new group
+                    groups.push([id]);
                 }
-                if (sortedIDs.includes(id)) {continue};
-                groups.push([id]);
-            }
+            });
 
             //now sort into "Teams" and Jr. Leaders
             for (let i=0;i<groups.length;i++) {
@@ -2390,11 +2382,16 @@ log(patrol.name + ": " + dist)
         let alliedSide = Tag[1];
         state.CoC.side = alliedSide;
         let alliedMorale = Tag[2];
-        let axisMorale = Tag[3];
+        let alliedCD = Tag[3];
+        let axisMorale = Tag[4];
+        let axisCD = Tag[5]
         state.CoC.forceMorale = [alliedMorale,axisMorale];
+        state.CoC.commandDice = [alliedCD,axisCD];
         SetupCard("Setup","","Neutral");
         outputCard.body.push("Allied Morale: " + alliedMorale);
+        outputCard.body.push("Allied Command Dice: " + alliedCD);
         outputCard.body.push("Axis Morale: " + axisMorale);
+        outputCard.body.push("Axis Command Dice: " + axisCD);
         
 
         PrintCard();
