@@ -11,7 +11,7 @@ const CoC = (() => {
     let SectionArray = {}; //to track sections of teams
     let PatrolArray = []; //ids of patrol models
     let CommandDiceArray = [];
-    let CommandDicePoints = [];
+    let InfoPoints = [[],[]];
 
     let hexMap = {}; 
     let edgeArray = [];
@@ -1119,7 +1119,7 @@ const CoC = (() => {
             rowLabelNum += 1;
             columnLabel = (columnLabel % 2 === 0) ? 1:2; //swaps odd and even
         }
-        //setup locations for Chain of Command Dice
+        //setup locations for Chain of Command Info and Dice
         let a = 0;
         let b = 1;
         if (state.CoC.side === "Right") {
@@ -1128,17 +1128,19 @@ const CoC = (() => {
         }
         let y = 43.8658278242683 + 66.965827824267;
         let x = Math.floor((pageInfo.width + edgeArray[1])/2);
-        if (edgeArray[0] === 0) {
-            //all on right side display
-            CommandDicePoints[a] = new Point(x,y);
-            CommandDicePoints[b] = new Point(x,y + pageInfo.height/2);
-        } else {
-            //players on 1 side or other
-            let x1 = Math.floor((edgeArray[0])/2);
-            CommandDicePoints[a] = new Point(x1,y);
-            CommandDicePoints[b] = new Point(x,y);
+        let x1 = Math.floor((edgeArray[0])/2);
+        for (let z=0;z<3;z++) {
+            y += 2*66.9658278242677;
+            if (edgeArray[0] === 0) {
+                //all on right side display
+                InfoPoints[a][z] = new Point(x,y);
+                InfoPoints[b][z] = new Point(x,y + pageInfo.height/2);
+            } else {
+                //players on 1 side or other
+                InfoPoints[a][z] = new Point(x1,y);
+                InfoPoints[b][z] = new Point(x,y);
+            }
         }
-
         BuildTerrainArray();
 
         let taKeys = Object.keys(TerrainArray);
@@ -2240,8 +2242,8 @@ log("Other side of Partial LOS Blocking Terrain")
                 state.CoC.forceMorale[player] += 1;
             }
         }
-        //UpdateDisplay(player); //updates CoC Points, Force Morale
-        let pos = DeepCopy(CommandDicePoints[player]);
+//update coc pts and force morale
+        let pos = DeepCopy(CommandDicePoints[player][2]);
         pos.y += 66.9658278242677;
         pos.x -= (Math.floor(command.length - 1)/2) * 75.1985619844599;
         sendPing(pos.x,pos.y, Campaign().get('playerpageid'), null, true); 
@@ -2403,7 +2405,12 @@ log(patrol.name + ": " + dist)
         sendChat("","Toggled to " + state.CoC.labmode)
     }
 
+    const UpdateCoCDice = () => {
 
+
+
+        
+    }
 
 /*
     const destroyGraphic = (tok) => {
