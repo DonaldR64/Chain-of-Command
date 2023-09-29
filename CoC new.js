@@ -292,15 +292,15 @@ const CoC = (() => {
 
     const HexInfo = {
         size: {
-            x: 75.1985619844599/Math.sqrt(3),
-            y: 66.9658278242677 * 2/3,
+            x: xSpacing/Math.sqrt(3),
+            y: ySpacing * 2/3,
         },
         pixelStart: {
-            x: 37.5992809922301,
+            x: xSpacing/2,
             y: 43.8658278242683,
         },
         halfX: xSpacing/2,
-        width: 75.1985619844599,
+        width: xSpacing,
         height: 89.2877704323569,
         directions: {},
     };
@@ -1087,7 +1087,7 @@ const CoC = (() => {
         let halfToggleX = HexInfo.halfX;
         let rowLabelNum = 0;
         let columnLabel = 1;
-        let startX = 37.5992809922301;
+        let startX = xSpacing/2;
         let startY = 43.8658278242683;
 
         for (let j = startY; j <= pageInfo.height;j+=ySpacing){
@@ -1126,20 +1126,34 @@ const CoC = (() => {
             a = 1;
             b = 0;
         }
-        let y = 43.8658278242683 + 66.965827824267;
+        let y = 43.8658278242683 + 2*ySpacing;
         let x = Math.floor((pageInfo.width + edgeArray[1])/2);
         let x1 = Math.floor((edgeArray[0])/2);
         for (let z=0;z<3;z++) {
-            y += 2*66.9658278242677;
+            let a,b;
             if (edgeArray[0] === 0) {
                 //all on right side display
-                InfoPoints[a][z] = new Point(x,y);
-                InfoPoints[b][z] = new Point(x,y + pageInfo.height/2);
+                if (state.CoC.side === "Left") {
+                    a = new Point(x,y);
+                    b = new Point(x,y + pageInfo.height/2);
+                } else {
+                    b = new Point(x,y);
+                    a = new Point(x,y + pageInfo.height/2);
+                }
             } else {
                 //players on 1 side or other
-                InfoPoints[a][z] = new Point(x1,y);
-                InfoPoints[b][z] = new Point(x,y);
+                if (state.CoC.side === "Left") {
+                    a = new Point(x1,y);
+                    b = new Point(x,y); 
+                } else {
+                    b = new Point(x,y);
+                    a = new Point(x1,y);
+                }
             }
+            InfoPoints[0][z] = a;
+            InfoPoints[1][z] = b;
+            y += 4*ySpacing;
+
         }
         BuildTerrainArray();
 
@@ -1779,7 +1793,8 @@ log("Other side of Partial LOS Blocking Terrain")
             nations: [[],[]],
             players: {},
             playerInfo: [[],[]],
-            markers: [[],[]],
+            diceIDs: [[],[]],
+            forceMoraleIDs: [],
             lineArray: [],
             forceMorale: [0,0],
             CoCPoints: [0,0],
@@ -2171,8 +2186,14 @@ log("Other side of Partial LOS Blocking Terrain")
             obj.remove();
         }
         //ResetActivations();
-        let playerID = msg.playerid;
-        let nation = state.CoC.players[playerID]; //set in initial Rolld6
+        let nation;
+        if (msg.selected[0]._id) {
+            let id = msg.selected[0]._id;
+            nation = ModelArray[id].nation;
+        } else {
+            let playerID = msg.playerid
+            nation = state.CoC.players[playerID];
+        }
         let player = (Allies.includes(nation)) ? 0:1;
         if (!nation) {nation = "Neutral"};
         SetupCard("New Phase","",nation);
@@ -2242,30 +2263,17 @@ log("Other side of Partial LOS Blocking Terrain")
                 state.CoC.forceMorale[player] += 1;
             }
         }
-//update coc pts and force morale
-        let pos = DeepCopy(CommandDicePoints[player][2]);
-        pos.y += 66.9658278242677;
-        pos.x -= (Math.floor(command.length - 1)/2) * 75.1985619844599;
+        //update coc pts and force morale
+        UpdateCoCDice();
+        //UpdateForceMorale();
+        let pos = DeepCopy(InfoPoints[player][2]);
+        //pos.y += 2*ySpacing;
+        pos.x -= (Math.floor(command.length - 1)/2) * xSpacing;
         sendPing(pos.x,pos.y, Campaign().get('playerpageid'), null, true); 
         for (let i=0;i<command.length;i++) {
             let roll = command[i];
-            roll = roll.toString();
-            let tablename = Nations[nation].dice;
-            let table = findObjs({type:'rollabletable', name: tablename})[0];
-            let obj = findObjs({type:'tableitem', _rollabletableid: table.id, name: roll })[0];
-            let imageURL = getCleanImgSrc(obj.get('avatar'));
-            let diceObj = createObj("graphic", {
-                left: pos.x,
-                top: pos.y,
-                width: 70,
-                height: 70,
-                isdrawing: true,
-                pageid: Campaign().get("playerpageid"),
-                imgsrc: imageURL,
-                layer: "objects",
-            });
-            toFront(diceObj);
-            pos.x += 75.1985619844599;
+            let diceObj = createDiceObject(nation,roll,pos,70);
+            pos.x += xSpacing;
             CommandDiceArray.push(diceObj);
         }
         PrintCard();
@@ -2368,8 +2376,8 @@ log(patrol.name + ": " + dist)
         outputCard.body.push("Allied Command Dice: " + alliedCD);
         outputCard.body.push("Axis Morale: " + axisMorale);
         outputCard.body.push("Axis Command Dice: " + axisCD);
-        
-
+        UpdateCoCDice();
+        //UpdateForceMorale();
         PrintCard();
     }
 
@@ -2406,11 +2414,64 @@ log(patrol.name + ": " + dist)
     }
 
     const UpdateCoCDice = () => {
-
-
-
-        
+log(state)
+        for (let p=0;p<2;p++) {
+            let nation = state.CoC.nations[p][0];
+log(nation)
+            //clear old dice
+            let oldIDs = state.CoC.diceIDs[p];
+            for (let i=0;i<oldIDs.length;i++) {
+                let id = oldIDs[i];
+                let token = findObjs({_type:"graphic", id: id})[0];
+                if (token) {
+                    token.remove();
+                }
+            }
+            state.CoC.diceIDs[p] = [];
+            //create new dice
+            let pts = state.CoC.CoCPoints[p];
+log("CoC Points: " + pts)
+            if (pts === 0) {return};
+            let dice = 0;
+            if (pts > 5) {
+                do {
+                    pts -= 6;
+                    dice++
+                }
+                while (pts > 5)
+            }
+            let location = InfoPoints[p][1];
+            for (let d=0;d<dice;d++) {
+                let diceObj = createDiceObject(nation,6,location,140);
+                state.CoC.diceIDs[p].push(diceObj.id);
+                location.x += 2*xSpacing;
+            }
+            let diceObj = createDiceObject(nation,pts,location,140);
+            state.CoC.diceIDs[p].push(diceObj.id);
+        }
     }
+
+    const createDiceObject = (nation,roll,location,size) => {
+        if (!size) {size = 70};
+        roll=roll.toString();
+        let tablename = Nations[nation].dice;
+        let table = findObjs({type:'rollabletable', name: tablename})[0];
+        let obj = findObjs({type:'tableitem', _rollabletableid: table.id, name: roll })[0];
+        let imageURL = getCleanImgSrc(obj.get('avatar'));
+        let diceObj = createObj("graphic", {
+            left: location.x,
+            top: location.y,
+            width: size,
+            height: size,
+            isdrawing: true,
+            pageid: Campaign().get("playerpageid"),
+            imgsrc: imageURL,
+            layer: "objects",
+        });
+        toFront(diceObj);
+        return diceObj;
+    }
+
 
 /*
     const destroyGraphic = (tok) => {
