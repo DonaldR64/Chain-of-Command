@@ -2187,12 +2187,13 @@ log("Other side of Partial LOS Blocking Terrain")
         }
         //ResetActivations();
         let nation;
-        if (msg.selected[0]._id) {
-            let id = msg.selected[0]._id;
-            nation = ModelArray[id].nation;
-        } else {
+        
+        if (!msg.selected) {
             let playerID = msg.playerid
             nation = state.CoC.players[playerID];
+        } else {
+            let id = msg.selected[0]._id;
+            nation = ModelArray[id].nation;
         }
         let player = (Allies.includes(nation)) ? 0:1;
         if (!nation) {nation = "Neutral"};
@@ -2440,14 +2441,19 @@ log("CoC Points: " + pts)
                 }
                 while (pts > 5)
             }
-            let location = InfoPoints[p][1];
+            let location = DeepCopy(InfoPoints[p][1]);
+            location.x -= Math.max(dice,3) * xSpacing;
             for (let d=0;d<dice;d++) {
                 let diceObj = createDiceObject(nation,6,location,140);
+                diceObj.set("name","CoC Dice");
                 state.CoC.diceIDs[p].push(diceObj.id);
                 location.x += 2*xSpacing;
             }
-            let diceObj = createDiceObject(nation,pts,location,140);
-            state.CoC.diceIDs[p].push(diceObj.id);
+            if (pts > 0) {
+                let diceObj = createDiceObject(nation,pts,location,140);
+                diceObj.set("name","CoC Dice");
+                state.CoC.diceIDs[p].push(diceObj.id);
+            }
         }
     }
 
@@ -2476,9 +2482,20 @@ log("CoC Points: " + pts)
 /*
     const destroyGraphic = (tok) => {
         if (tok.get('subtype') === "token") {
+
+//if is a CoC DIce then remove 6 points, remove id from state             --->   diceObj.set("name","CoC Dice");
+
+
+
+
             let model = ModelArray[tok.id];
             if (!model) {return};
             model.kill();
+
+
+
+
+
         }
     }
 */
