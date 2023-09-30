@@ -2207,19 +2207,25 @@ log("Other side of Partial LOS Blocking Terrain")
         let player = (Allies.includes(nation)) ? 0:1;
         if (!nation) {nation = "Neutral"};
         SetupCard("New Phase","",nation);
-        let number = state.CoC.commandDice[player];
+        let number = parseInt(state.CoC.commandDice[player]);
         let rolls = [];
+        let fifthDice = 0;
+        let fifthDiceUsed = false;
         let fives = 0;
         let sixes = 0;
         let command = [];
         PlaySound("Dice");
         for (let i=0;i<number;i++) {
             let roll = randomInteger(6);
+            if (number === 5 && i === 4) {
+                if (roll === 6) {roll = 5};
+                fifthDice = roll;
+            }
             rolls.push(roll);
             if (roll === 5) {
                 fives += 1
             } else if (roll === 6) {
-                sixes += 1
+                sixes += 1;
             } else {
                 command.push(roll);
             }
@@ -2234,7 +2240,16 @@ log("Other side of Partial LOS Blocking Terrain")
                 line += "| ";
                 flip = true;
             }
-            line += DisplayDice(rolls[i],nation,30) + " ";
+            let diceNation = nation;
+            if (rolls[i] === fifthDice && fifthDiceUsed === false) {
+                if (nation === "Soviet") {
+                    diceNation = "Neutral"
+                } else {
+                    diceNation = "Soviet";
+                }
+                fifthDiceUsed = true;
+            }
+            line += DisplayDice(rolls[i],diceNation,30) + " ";
         }
         outputCard.body.push(line);
         if (fives > 0 || sixes > 1) {
@@ -2279,9 +2294,19 @@ log("Other side of Partial LOS Blocking Terrain")
         //pos.y += 2*ySpacing;
         pos.x -= (Math.floor(command.length - 1)/2) * xSpacing;
         sendPing(pos.x,pos.y, Campaign().get('playerpageid'), null, true); 
+        fifthDiceUsed = false;
         for (let i=0;i<command.length;i++) {
             let roll = command[i];
-            let diceObj = createDiceObject(nation,roll,pos,70);
+            diceNation = nation;
+            if (roll === fifthDice && fifthDiceUsed === false) {
+                if (nation === "Soviet") {
+                    diceNation = "Neutral"
+                } else {
+                    diceNation = "Soviet";
+                }
+                fifthDiceUsed = true;
+            }
+            let diceObj = createDiceObject(diceNation,roll,pos,70);
             diceObj.set("name","Command Dice");
             pos.x += xSpacing;
             CommandDiceArray.push(diceObj);
