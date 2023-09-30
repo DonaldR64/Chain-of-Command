@@ -43,6 +43,8 @@ const CoC = (() => {
     let outputCard = {title: "",subtitle: "",nation: "",body: [],buttons: [],};
     const CharacterCountries = ["Soviet ","US ", "German ","UK "];
 
+    const MoralePics = ["https://s3.amazonaws.com/files.d20.io/images/361150399/XPRXFgQ6d6eqInWRlt-SKQ/thumb.png?1696039919","https://s3.amazonaws.com/files.d20.io/images/361150403/FudXeFi6g_PIau8vsM3Ing/thumb.png?1696039919","https://s3.amazonaws.com/files.d20.io/images/361150405/mzuVuU9G6aTS3Q7aMQu-5A/thumb.png?1696039919","https://s3.amazonaws.com/files.d20.io/images/361150401/yY8W-GmkEyuahCwLNKLegA/thumb.png?1696039919","https://s3.amazonaws.com/files.d20.io/images/361150400/PXDMjMztWr_Seb_mJqXC2w/thumb.png?1696039919","https://s3.amazonaws.com/files.d20.io/images/361150404/1iYSySfxjf8Gfh8MrZgjPg/thumb.png?1696039919","https://s3.amazonaws.com/files.d20.io/images/361150402/TiZ9ZyEzGrCRm34nbkDUkA/thumb.png?1696039919","https://s3.amazonaws.com/files.d20.io/images/361150373/jREeUbCi3KVxuyzADd0jnw/thumb.png?1696039911","https://s3.amazonaws.com/files.d20.io/images/361150374/EO212vyxAFxTs4iXeiLTig/thumb.png?169603991","https://s3.amazonaws.com/files.d20.io/images/361150350/lzY6Koc2Lr54zEUnXFcxEA/thumb.png?1696039902","https://s3.amazonaws.com/files.d20.io/images/361150340/O8Vuc8FzxTiRA-epDZcomQ/thumb.png?1696039899","https://s3.amazonaws.com/files.d20.io/images/361150334/j5-rxZbbCxfaWVDImo8vVw/thumb.png?1696039895"];
+
     const Axis = ["Germany","Italy","Japan"];
     const Allies = ["Soviet","USA","UK","Canada"];
 
@@ -1772,6 +1774,10 @@ log("Other side of Partial LOS Blocking Terrain")
         })
         tokens.forEach((token) => {
             if (token.get("name").includes("Jump Off Point") === true) {return};
+            if (token.get("name") === "CoC Dice" || token.get("name") === "Command Dice") {
+                token.remove();
+                return;
+            }
             token.set({
                 name: "",
                 tint_color: "transparent",
@@ -1818,7 +1824,7 @@ log("Other side of Partial LOS Blocking Terrain")
             if (token.get("status_dead") === true) {
                 token.remove();
             }
-            if (token.get("name").includes("Jump Off Point") && info === "All") {
+            if ((token.get("name").includes("Jump Off Point") || token.get("name") === "Command Dice") && info === "All") {
                 token.remove();
             }
         });
@@ -2262,11 +2268,11 @@ log("Other side of Partial LOS Blocking Terrain")
             } else if (ran === 6) {
                 outputCard.body.push("Your men have discovered a cache of fine wine buried by its rightful owner and intended to be dug up at the end of the war. Sadly for him, it won’t be there when he returns. Fortunately for you, your Force Morale increases by one point. Bottoms Up!");
                 state.CoC.forceMorale[player] += 1;
+                UpdateForceMorale();
             }
         }
         //update coc pts and force morale
         UpdateCoCDice();
-        //UpdateForceMorale();
         let pos = DeepCopy(InfoPoints[player][2]);
         //pos.y += 2*ySpacing;
         pos.x -= (Math.floor(command.length - 1)/2) * xSpacing;
@@ -2274,6 +2280,7 @@ log("Other side of Partial LOS Blocking Terrain")
         for (let i=0;i<command.length;i++) {
             let roll = command[i];
             let diceObj = createDiceObject(nation,roll,pos,70);
+            diceObj.set("name","Command Dice");
             pos.x += xSpacing;
             CommandDiceArray.push(diceObj);
         }
@@ -2378,7 +2385,7 @@ log(patrol.name + ": " + dist)
         outputCard.body.push("Axis Morale: " + axisMorale);
         outputCard.body.push("Axis Command Dice: " + axisCD);
         UpdateCoCDice();
-        //UpdateForceMorale();
+        UpdateForceMorale();
         PrintCard();
     }
 
@@ -2415,10 +2422,8 @@ log(patrol.name + ": " + dist)
     }
 
     const UpdateCoCDice = () => {
-log(state)
         for (let p=0;p<2;p++) {
             let nation = state.CoC.nations[p][0];
-log(nation)
             //clear old dice
             let oldIDs = state.CoC.diceIDs[p];
             for (let i=0;i<oldIDs.length;i++) {
@@ -2431,8 +2436,7 @@ log(nation)
             state.CoC.diceIDs[p] = [];
             //create new dice
             let pts = state.CoC.CoCPoints[p];
-log("CoC Points: " + pts)
-            if (pts === 0) {return};
+            if (pts === 0) {continue};
             let dice = 0;
             if (pts > 5) {
                 do {
@@ -2441,13 +2445,21 @@ log("CoC Points: " + pts)
                 }
                 while (pts > 5)
             }
+            let sign;
+            if (p === 0) {
+                sign = (state.CoC.side === "Left") ? 1:-1; 
+            } else {
+                sign = (state.CoC.side === "Left") ?
+                -1:+1
+            }  
+
             let location = DeepCopy(InfoPoints[p][1]);
-            location.x -= Math.max(dice,3) * xSpacing;
+            location.x += sign * Math.min(dice/2,3) * xSpacing;
             for (let d=0;d<dice;d++) {
                 let diceObj = createDiceObject(nation,6,location,140);
                 diceObj.set("name","CoC Dice");
                 state.CoC.diceIDs[p].push(diceObj.id);
-                location.x += 2*xSpacing;
+                location.x -= sign * 2*xSpacing;
             }
             if (pts > 0) {
                 let diceObj = createDiceObject(nation,pts,location,140);
@@ -2456,6 +2468,38 @@ log("CoC Points: " + pts)
             }
         }
     }
+
+    const UpdateForceMorale = () => {
+        for (let p=0;p<2;p++) {
+            let nation = state.CoC.nations[p][0];
+            //clear old #
+            let oldID = state.CoC.forceMoraleIDs[p];
+            let token = findObjs({_type:"graphic", id: oldID})[0];
+            if (token) {
+                token.remove();
+            }
+            state.CoC.forceMoraleIDs[p] = "";
+            //set new
+            let morale = state.CoC.forceMorale[p];
+            let location = InfoPoints[p][0];
+            let imageURL = getCleanImgSrc(MoralePics[morale]);
+            let imageObj = createObj("graphic", {
+                left: location.x,
+                top: location.y,
+                width: 210,
+                height: 210,
+                isdrawing: true,
+                pageid: Campaign().get("playerpageid"),
+                imgsrc: imageURL,
+                name: "Morale"
+                layer: "map",
+            });
+            toFront(imageObj);
+        }
+    }
+
+
+
 
     const createDiceObject = (nation,roll,location,size) => {
         if (!size) {size = 70};
