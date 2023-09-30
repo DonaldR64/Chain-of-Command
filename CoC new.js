@@ -2209,17 +2209,18 @@ log("Other side of Partial LOS Blocking Terrain")
         SetupCard("New Phase","",nation);
         let number = parseInt(state.CoC.commandDice[player]);
         let rolls = [];
-        let fifthDice = 0;
-        let fifthDiceUsed = false;
+        //6th Dice is a Red dice, 6s become 5s
+        let sixthDice = 0;
+        let sixthDiceUsed = false;
         let fives = 0;
         let sixes = 0;
         let command = [];
         PlaySound("Dice");
         for (let i=0;i<number;i++) {
             let roll = randomInteger(6);
-            if (number === 5 && i === 4) {
+            if (number === 6 && i === 5) {
                 if (roll === 6) {roll = 5};
-                fifthDice = roll;
+                sixthDice = roll;
             }
             rolls.push(roll);
             if (roll === 5) {
@@ -2241,13 +2242,13 @@ log("Other side of Partial LOS Blocking Terrain")
                 flip = true;
             }
             let diceNation = nation;
-            if (rolls[i] === fifthDice && fifthDiceUsed === false) {
+            if (rolls[i] === sixthDice && sixthDiceUsed === false) {
                 if (nation === "Soviet") {
                     diceNation = "Neutral"
                 } else {
                     diceNation = "Soviet";
                 }
-                fifthDiceUsed = true;
+                sixthDiceUsed = true;
             }
             line += DisplayDice(rolls[i],diceNation,30) + " ";
         }
@@ -2294,17 +2295,17 @@ log("Other side of Partial LOS Blocking Terrain")
         //pos.y += 2*ySpacing;
         pos.x -= (Math.floor(command.length - 1)/2) * xSpacing;
         sendPing(pos.x,pos.y, Campaign().get('playerpageid'), null, true); 
-        fifthDiceUsed = false;
+        sixthDiceUsed = false;
         for (let i=0;i<command.length;i++) {
             let roll = command[i];
             diceNation = nation;
-            if (roll === fifthDice && fifthDiceUsed === false) {
+            if (roll === sixthDice && sixthDiceUsed === false) {
                 if (nation === "Soviet") {
                     diceNation = "Neutral"
                 } else {
                     diceNation = "Soviet";
                 }
-                fifthDiceUsed = true;
+                sixthDiceUsed = true;
             }
             let diceObj = createDiceObject(diceNation,roll,pos,70);
             diceObj.set("name","Command Dice");
