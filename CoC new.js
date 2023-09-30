@@ -1820,12 +1820,15 @@ log("Other side of Partial LOS Blocking Terrain")
             _subtype: "token",
             layer: "map",
         });
+        let removals = ["Jump Off Point","Command Dice","Morale"];
         tokens.forEach((token) => {
             if (token.get("status_dead") === true) {
                 token.remove();
             }
-            if ((token.get("name").includes("Jump Off Point") || token.get("name") === "Command Dice") && info === "All") {
-                token.remove();
+            for (let i=0;i<removals.length;i++) {
+                if (removals[i] === token.get("name") && info === "All") {
+                    token.remove();
+                }
             }
         });
     }
@@ -2486,12 +2489,12 @@ log(patrol.name + ": " + dist)
             let imageObj = createObj("graphic", {
                 left: location.x,
                 top: location.y,
-                width: 210,
-                height: 210,
+                width: 140,
+                height: 140,
                 isdrawing: true,
                 pageid: Campaign().get("playerpageid"),
                 imgsrc: imageURL,
-                name: "Morale"
+                name: "Morale",
                 layer: "map",
             });
             toFront(imageObj);
