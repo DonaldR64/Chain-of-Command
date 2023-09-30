@@ -2392,32 +2392,6 @@ log(patrol.name + ": " + dist)
         PrintCard();
     }
 
-    const ShowMorale = () => {
-        SetupCard("Chain of Command","","Neutral");
-        for (let i=0;i<2;i++) {
-            let nations = state.CoC.nations[i].toString();
-            nations = nations.replace(","," + ");
-            outputCard.body.push("[U]" + nations + "[/u]");
-            outputCard.body.push("Morale: " + state.CoC.forceMorale[i]);
-            let coc = state.CoC.CoCPoints[i];
-            let dice = 0;
-            if (coc > 5) {
-                do {
-                    coc -= 6;
-                    dice++
-                }
-                while (coc > 5)
-            }
-            if (dice > 0) {
-                outputCard.body.push("Full CoC Dice: " + dice);
-            }
-            outputCard.body.push("CoC Points: " + coc);
-            if (i === 0) {
-                outputCard.body.push("[hr]");
-            }
-        }
-        PrintCard();
-    }
 
     const ToggleLab = () => {
         state.CoC.labmode = (state.CoC.labmode === true) ? false:true;
@@ -2595,9 +2569,6 @@ log(patrol.name + ": " + dist)
                 break;
             case '!SetupGame':
                 SetupGame(msg);
-                break;
-            case '!ShowMorale':
-                ShowMorale();
                 break;
             case '!ToggleLab':
                 ToggleLab();
