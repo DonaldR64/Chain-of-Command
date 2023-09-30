@@ -2423,7 +2423,7 @@ log(patrol.name + ": " + dist)
             while (pts > 5)
         }
         let sign;
-        if (p === 0) {
+        if (player === 0) {
             sign = (state.CoC.side === "Left") ? 1:-1; 
         } else {
             sign = (state.CoC.side === "Left") ?
@@ -2431,23 +2431,25 @@ log(patrol.name + ": " + dist)
         }  
 
         let location = DeepCopy(InfoPoints[player][1]);
-        location.x += sign * Math.min(dice/2,3) * xSpacing;
+        let qw = dice/2;
+        if (qw < 1) {qw = 0};
+        location.x += sign * Math.min(qw,4) * xSpacing;
         for (let d=0;d<dice;d++) {
             let diceObj = createDiceObject(nation,6,location,140);
             diceObj.set("name","CoC Dice");
-            state.CoC.diceIDs[p].push(diceObj.id);
+            state.CoC.diceIDs[player].push(diceObj.id);
             location.x -= sign * 2*xSpacing;
         }
         if (pts > 0) {
             let diceObj = createDiceObject(nation,pts,location,140);
             diceObj.set("name","CoC Dice");
-            state.CoC.diceIDs[p].push(diceObj.id);
+            state.CoC.diceIDs[player].push(diceObj.id);
         }
     }
 
     const UpdateForceMorale = (change,player) => {
-        let morale = state.CoC.forceMorale[player] + change;
-        state.CoC.forceMorale[player] = morale
+        let morale = parseInt(state.CoC.forceMorale[player]) + parseInt(change);
+        state.CoC.forceMorale[player] = morale;
         let nation = state.CoC.nations[player][0];
         //clear old #
         let oldID = state.CoC.forceMoraleIDs[player];
@@ -2457,7 +2459,6 @@ log(patrol.name + ": " + dist)
         }
         state.CoC.forceMoraleIDs[player] = "";
         //set new
-        let morale = state.CoC.forceMorale[player];
         let location = InfoPoints[player][0];
         let imageURL = getCleanImgSrc(MoralePics[morale]);
         let imageObj = createObj("graphic", {
