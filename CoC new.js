@@ -498,6 +498,7 @@ const CoC = (() => {
             this.sectionID = sectionID;
             this.modelIDs = [];
             this.symbol = "";
+            this.order = "";
 
             TeamArray[teamID] = this;
         }
@@ -1928,6 +1929,7 @@ log("Other side of Partial LOS Blocking Terrain")
                 });
                 model.token.set("statusmarkers",statusmarkers);
             }
+            team.leader();
             section.add(team);
         } else if (unitComp === "Section") {
             let tokenInfo = {};
@@ -2526,6 +2528,257 @@ log(patrol.name + ": " + dist)
     }
 
 
+
+    const UnitActivation = (msg) => {
+        //Teams and Squads
+        //!Activate;@{selected|token_id};Squad;?{Action|Stand and Fire|Tactical Move|Move and Fire|Normal Move|At the Double|Covering Fire|Deploy}
+        let Tag = msg.content.split(";");
+        let id = Tag[1];
+        let size = Tag[2];
+        let order = Tag[3];
+        let moveAction = false;
+        let errorMsg = "";
+        if (order.includes("Move") || order.includes("At the")) {
+            moveAction = true;
+        }
+        let model = ModelArray[id];
+        let quality = model.quality;
+        let teams = [];
+        let team1 = TeamArray[model.teamID];
+        let section = SectionArray[team1.sectionID];
+        teams.push(team1);
+        let team1Leader = ModelArray[team1.modelIDs[0]];
+        let tlc = team1Leader.token.get("aura1_color");
+        if (tlc === colours.black) {
+            errorMsg = "Target has already been activated";
+        } else if (tlc === colours.red) {
+            errorMsg = "Target is Broken";
+        } else if (tlc === colours.yellow && moveAction === true) {
+            errorMsg = "Target is Pinned and Cannot Move";
+        }
+        let requires;
+        if (team1Leader.token.get(sm.order) === true) {
+            requires = "Using Leader's Order";
+        } else {
+            requires = "Command Dice: "; 
+            if (size === "Team") {
+                requires += DisplayDice(1,team1.nation,16);
+            } else {
+                requires += DisplayDice(2,team1.nation,16);
+            }
+        }
+        SetupCard(order,requires,model.nation);
+
+        if (size === "Section" && errorMsg !== "") {
+            //check if other team(s) are in range and valid to activate
+            let valid = false;
+            for (let i=0;i<section.teamIDs.length;i++) {
+                let team2 = TeamArray[section.teamIDs[i]];
+                if (team2.id === team1.id) {continue};
+                let team2Leader = ModelArray[team2.modelIDs[0]];
+                let t2lc = team2Leader.token.get('aura1_color');
+                if (t2lc === colours.black) {
+                    errorMsg = "Other Team has already been activated";
+                } else if (t2lc === colours.red) {
+                    errorMsg = "Other Team is Broken";
+                } else if (t2lc === colours.yellow && moveAction === true) {
+                    errorMsg = "Other Team is Pinned and Cannot Move";
+                }
+                if (TeamsInRange(team1,team2) === false) {
+                    errorMsg = 'Other Team is > 4"'
+                }
+                if (errorMsg !== "") {
+                    break;
+                } 
+                teams.push(team2);
+            }
+        };
+
+        if ((order === "Overwatch" || order === "Covering Fire") && team1Leader.token.get(sm.order) === false) {
+            errorMsg = "Needs an Order to perform this action";
+        }
+        if (errorMsg !== "") {
+            outputCard.body.push(errorMsg);
+            PrintCard();
+            return;
+        }
+
+        let weaponMoveMod = 0;
+        let moveDice = [];
+        for (let i=0;i<3;i++) {
+            moveDice.push(randomInteger(6));
+        }
+        team1Leader.token.set(sm.order,false);
+        switch (order) {
+            case 'Tactical Move':
+                outputCard.body.push("Rolls: " + DisplayDice(moveDice[0],team1.nation,14));
+                break;
+            case 'Move and Fire':
+                outputCard.body.push("Rolls: " + DisplayDice(moveDice[0],team1.nation,14));
+                break;
+            case 'Normal Move':
+                outputCard.body.push("Rolls: " + DisplayDice(moveDice[0],team1.nation,14) + " / " + DisplayDice(moveDice[1],team1.nation,14));
+                break;
+            case 'At the Double':
+                outputCard.body.push("Rolls: " + DisplayDice(moveDice[0],team1.nation,14) + " / " + DisplayDice(moveDice[1],team1.nation,14) + " / " + DisplayDice(moveDice[2],team1.nation,14));
+                break;
+            case 'Deploy':
+                let roll = randomInteger(6);
+                let keys = Object.keys(ModelArray);
+                let leaderOffboard = false;
+                for (let i=0;i<keys.length;i++) {
+                    let model2 = ModelArray[keys[i]];
+                    if ((model2.special.includes("Senior Leader") || model2.special.includes("Adjutant")) && model2.player === model.player && hexMap[model2.hexLabel].terrain.includes("Offboard")) {
+                        leaderOffboard = true;
+                        break;
+                    };
+                }
+                if (leaderOffboard === false) {
+                    outputCard.body.push("No Senior Leader or Adjutant Offboard: " + DisplayDice(roll,team1.nation,14));
+                    if (roll < 4) {
+                        outputCard.body.push("The " + size + " failed to receive the Orders");     
+                        for (let i=0;i<teams.length;i++) {
+                            let team = teams[i];
+                            let tLeader = ModelArray[team.modelIDs[0]];
+                            tLeader.token.set("aura1_color",colours.black);
+                        }
+                        PrintCard();
+                        return;
+                    }
+                }
+                let radius;
+                if (quality === "Green") {radius = 4};
+                if (quality === "Regular") {radius = 6};
+                if (quality === "Elite") {radius = 9};
+
+                outputCard.body.push("The " + size + " can deploy within " + radius + '"' + " of a Jump Off Point");
+                outputCard.body.push("They may not move, but may fire at full effect");
+                break;
+            case 'Overwatch':
+                //PlaceMarker("overwatch",teamLeader);
+                outputCard.body.push("Place Overwatch Marker and rotate to desired position, then Activate it");
+                break;
+            case 'Covering Fire':
+                //PlaceMarker("covering",teamLeader,size);
+                outputCard.body.push("Place Covering Fire in desired area, then Activate it");
+                break;
+        }
+
+        teams.forEach((indTeam) => {
+            let move;
+            let teamLeader = ModelArray[indTeam.modelIDs[0]];
+            indTeam.order = order;
+            teamLeader.token.set("aura1_color",colours.black);
+            let shock = parseInt(teamLeader.token.get("bar3_value"));
+            switch (action) {
+                case 'Stand and Fire':
+                    outputCard.body.push("[#ff0000]" + indTeam.name + " fires at full effect[/#]");
+                    break;
+                case 'Tactical Move':
+                    move = Math.max(0,moveDice[0] - shock) + '"';
+                    outputCard.body.push("[#ff0000]" + indTeam.name + " can move " + move + "[/#]");
+                    break;
+                case 'Move and Fire':
+                    move = Math.max(0,moveDice[0] - shock - weaponMoveMod) + '"';
+                    outputCard.body.push("[#ff0000]" + indTeam.name + " can move " + move + "[/#]");
+                    break;
+                case 'Normal Move':
+                    move = Math.max(0,moveDice[0] + moveDice[1] - shock  - (2*weaponMoveMod)) + '"';
+                    move2 = Math.max(0,Math.max(moveDice[0],moveDice[1]) - shock) + '"';
+                    move3 = Math.max(0,Math.min(moveDice[0],moveDice[1]) - shock) + '"';
+                    if (teamLeader.type === "Gun") {
+                        if (teamLeader.special.includes("Light")) {
+                            outputCard.body.push("[#ff0000]" + indTeam.name + " can move " + move + "[/#]");   
+                        } else if (teamLeader.special.includes("Medium")) {
+                            outputCard.body.push("[#ff0000]" + indTeam.name + " can move " + move2 + "[/#]");
+                        } else if (teamLeader.special.includes("Heavy")) {
+                            outputCard.body.push("[#ff0000]" + indTeam.name + " can move " + move3 + "[/#]");
+                        }
+                        outputCard.body.push("The Team may not cross Obstacles");
+                    } else {
+                        outputCard.body.push("[#ff0000]" + indTeam.name  + " can move " + move + "[/#]");
+                        outputCard.body.push('Low Obstacle/Building: ' + move2);
+                        outputCard.body.push('High Obstacle: ' + move3);
+                    }
+                    break;
+                case 'At the Double':
+                    move = Math.max(0,moveDice[0] + moveDice[1] + moveDice[2] - shock  - (3*weaponMoveMod)) + '"'; 
+                    outputCard.body.push("[#ff0000]" + indTeam.name + " can move " + move + "[/#]");
+                    teamLeader.token.set("bar3_value",(shock+1));
+                    break;
+            }
+        });
+        switch (order) {
+            case "Rotate":
+                outputCard.body.push("Team can only rotate the Weapon");
+                break;
+            case 'Tactical Move':
+                outputCard.body.push("Teams take cover while doing so");
+                outputCard.body.push('-1" for Heavy Going');
+                outputCard.body.push("No Crossing Obstacles");
+                break;
+            case 'Move and Fire':
+                outputCard.body.push("Teams can fire before or after moving, at 1/2 effect");
+                outputCard.body.push('-1" for Heavy Going');
+                outputCard.body.push("No Crossing Obstacles"); 
+                break;
+            case 'Normal Move':
+                outputCard.body.push('-2" for Heavy Going');
+                break;
+            case 'At the Double':
+                outputCard.body.push("Cannot Move in Broken or Heavy Ground");
+                outputCard.body.push("Teams takes 1 point of Shock each");
+                break;
+        }
+
+
+/*
+        let ncoIDs = [];
+        for (let i=0;i<teams.length;i++) {
+            let team = teams[i];
+            for (let j=0;j<team.nco.length;j++) {
+                let ncoID = team.nco[j];
+                let ncoBase = BaseArray[ncoID];
+                if (ncoIDs.includes(ncoID) === false) {
+                    ncoBase.token.set("aura1_color",colours.black);
+                    outputCard.body.push("[#ff0000]" + ncoBase.name + " accompanies the Squad but may not use his Command Initiative this Phase[/#]");
+                    ncoBase.token.set(sm.tactical,false);
+                    ncoBase.token.set(sm.overwatch,false);
+                    if (action === "Tactical Move") {
+                        ncoBase.token.set(sm.tactical,true);
+                    }
+                    ncoIDs.push(ncoID); //in case attached to multiple teams
+                }
+            }
+            for (let j=0;j<team.co.length;j++) {
+                let coID = team.co[j];
+                let coBase = BaseArray[coID];
+                if (coIDs.includes(coID) === false) {
+                    coBase.token.set("aura1_color",colours.black);
+                    outputCard.body.push("[#ff0000]" + coBase.name + " accompanies the Squad but may not use his Command Initiative this Phase[/#]");
+                    coBase.token.set(sm.tactical,false);
+                    coBase.token.set(sm.overwatch,false);
+                    if (action === "Tactical Move") {
+                        coBase.token.set(sm.tactical,true);
+                    }
+                    coIDs.push(coID); //in case attached to multiple teams
+                }
+            }
+        }
+*/
+        PrintCard();
+    }
+
+
+
+
+
+
+
+
+
+
+
 /*
     const destroyGraphic = (tok) => {
         if (tok.get('subtype') === "token") {
@@ -2599,7 +2852,9 @@ log(patrol.name + ": " + dist)
             case '!ToggleLab':
                 ToggleLab();
                 break;
-
+            case '!Activate':
+                UnitActivation(msg);
+                break;
         }
     };
 
