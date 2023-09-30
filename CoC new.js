@@ -2196,7 +2196,7 @@ log("Other side of Partial LOS Blocking Terrain")
         }
         //ResetActivations();
         let nation;
-        
+        let changeCoC = 0;
         if (!msg.selected) {
             let playerID = msg.playerid
             nation = state.CoC.players[playerID];
@@ -2242,7 +2242,7 @@ log("Other side of Partial LOS Blocking Terrain")
         }
         if (fives > 0) {
             outputCard.body.push(fives + " Added to Chain of Command");
-            state.CoC.CoCPoints[player] += fives;
+            changeCoC += fives;
             outputCard.body.push("Total: " + state.CoC.CoCPoints[player]);
         }
         if (sixes > 1) {
@@ -2253,7 +2253,7 @@ log("Other side of Partial LOS Blocking Terrain")
         }
         if (sixes > 3) {
             outputCard.body.push("Player gains a complete Chain of Command Dice");
-            state.CoC.CoCPoints[player] += 6;
+            changeCoC += 6;
             let ran = randomInteger(6);
             outputCard.body.push("A Random Event Occurs")
             if (ran === 1) {
@@ -2270,12 +2270,11 @@ log("Other side of Partial LOS Blocking Terrain")
                 outputCard.body.push("It has begun to rain very heavily. Visibility is reduced to 18” for the remainder of this Turn. At the end of the Turn roll a D6 and consult Book");
             } else if (ran === 6) {
                 outputCard.body.push("Your men have discovered a cache of fine wine buried by its rightful owner and intended to be dug up at the end of the war. Sadly for him, it won’t be there when he returns. Fortunately for you, your Force Morale increases by one point. Bottoms Up!");
-                state.CoC.forceMorale[player] += 1;
-                UpdateForceMorale();
+                    UpdateForceMorale(1,player);
             }
         }
         //update coc pts and force morale
-        UpdateCoCDice();
+        UpdateCoCDice(changeCoC,player);
         let pos = DeepCopy(InfoPoints[player][2]);
         //pos.y += 2*ySpacing;
         pos.x -= (Math.floor(command.length - 1)/2) * xSpacing;
@@ -2387,8 +2386,9 @@ log(patrol.name + ": " + dist)
         outputCard.body.push("Allied Command Dice: " + alliedCD);
         outputCard.body.push("Axis Morale: " + axisMorale);
         outputCard.body.push("Axis Command Dice: " + axisCD);
-        UpdateCoCDice();
-        UpdateForceMorale();
+        for (let player = 0;player<2;player++) {
+            UpdateForceMorale(0,player);
+        }
         PrintCard();
     }
 
@@ -2398,81 +2398,80 @@ log(patrol.name + ": " + dist)
         sendChat("","Toggled to " + state.CoC.labmode)
     }
 
-    const UpdateCoCDice = () => {
-        for (let p=0;p<2;p++) {
-            let nation = state.CoC.nations[p][0];
-            //clear old dice
-            let oldIDs = state.CoC.diceIDs[p];
-            for (let i=0;i<oldIDs.length;i++) {
-                let id = oldIDs[i];
-                let token = findObjs({_type:"graphic", id: id})[0];
-                if (token) {
-                    token.remove();
-                }
-            }
-            state.CoC.diceIDs[p] = [];
-            //create new dice
-            let pts = state.CoC.CoCPoints[p];
-            if (pts === 0) {continue};
-            let dice = 0;
-            if (pts > 5) {
-                do {
-                    pts -= 6;
-                    dice++
-                }
-                while (pts > 5)
-            }
-            let sign;
-            if (p === 0) {
-                sign = (state.CoC.side === "Left") ? 1:-1; 
-            } else {
-                sign = (state.CoC.side === "Left") ?
-                -1:+1
-            }  
-
-            let location = DeepCopy(InfoPoints[p][1]);
-            location.x += sign * Math.min(dice/2,3) * xSpacing;
-            for (let d=0;d<dice;d++) {
-                let diceObj = createDiceObject(nation,6,location,140);
-                diceObj.set("name","CoC Dice");
-                state.CoC.diceIDs[p].push(diceObj.id);
-                location.x -= sign * 2*xSpacing;
-            }
-            if (pts > 0) {
-                let diceObj = createDiceObject(nation,pts,location,140);
-                diceObj.set("name","CoC Dice");
-                state.CoC.diceIDs[p].push(diceObj.id);
-            }
-        }
-    }
-
-    const UpdateForceMorale = () => {
-        for (let p=0;p<2;p++) {
-            let nation = state.CoC.nations[p][0];
-            //clear old #
-            let oldID = state.CoC.forceMoraleIDs[p];
-            let token = findObjs({_type:"graphic", id: oldID})[0];
+    const UpdateCoCDice = (change,player) => {
+        let pts = state.CoC.CoCPoints[player] + change;
+        state.CoC.CoCPoints[player] = pts;
+        let nation = state.CoC.nations[player][0];
+        //clear old dice
+        let oldIDs = state.CoC.diceIDs[player];
+        for (let i=0;i<oldIDs.length;i++) {
+            let id = oldIDs[i];
+            let token = findObjs({_type:"graphic", id: id})[0];
             if (token) {
                 token.remove();
             }
-            state.CoC.forceMoraleIDs[p] = "";
-            //set new
-            let morale = state.CoC.forceMorale[p];
-            let location = InfoPoints[p][0];
-            let imageURL = getCleanImgSrc(MoralePics[morale]);
-            let imageObj = createObj("graphic", {
-                left: location.x,
-                top: location.y,
-                width: 140,
-                height: 140,
-                isdrawing: true,
-                pageid: Campaign().get("playerpageid"),
-                imgsrc: imageURL,
-                name: "Morale",
-                layer: "map",
-            });
-            toFront(imageObj);
         }
+        state.CoC.diceIDs[player] = [];
+        //create new dice
+        if (pts === 0) {return};
+        let dice = 0;
+        if (pts > 5) {
+            do {
+                pts -= 6;
+                dice++
+            }
+            while (pts > 5)
+        }
+        let sign;
+        if (p === 0) {
+            sign = (state.CoC.side === "Left") ? 1:-1; 
+        } else {
+            sign = (state.CoC.side === "Left") ?
+            -1:+1
+        }  
+
+        let location = DeepCopy(InfoPoints[player][1]);
+        location.x += sign * Math.min(dice/2,3) * xSpacing;
+        for (let d=0;d<dice;d++) {
+            let diceObj = createDiceObject(nation,6,location,140);
+            diceObj.set("name","CoC Dice");
+            state.CoC.diceIDs[p].push(diceObj.id);
+            location.x -= sign * 2*xSpacing;
+        }
+        if (pts > 0) {
+            let diceObj = createDiceObject(nation,pts,location,140);
+            diceObj.set("name","CoC Dice");
+            state.CoC.diceIDs[p].push(diceObj.id);
+        }
+    }
+
+    const UpdateForceMorale = (change,player) => {
+        let morale = state.CoC.forceMorale[player] + change;
+        state.CoC.forceMorale[player] = morale
+        let nation = state.CoC.nations[player][0];
+        //clear old #
+        let oldID = state.CoC.forceMoraleIDs[player];
+        let token = findObjs({_type:"graphic", id: oldID})[0];
+        if (token) {
+            token.remove();
+        }
+        state.CoC.forceMoraleIDs[player] = "";
+        //set new
+        let morale = state.CoC.forceMorale[player];
+        let location = InfoPoints[player][0];
+        let imageURL = getCleanImgSrc(MoralePics[morale]);
+        let imageObj = createObj("graphic", {
+            left: location.x,
+            top: location.y,
+            width: 140,
+            height: 140,
+            isdrawing: true,
+            pageid: Campaign().get("playerpageid"),
+            imgsrc: imageURL,
+            name: "Morale",
+            layer: "map",
+        });
+        toFront(imageObj);
     }
 
 
