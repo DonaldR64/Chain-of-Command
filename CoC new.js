@@ -2670,7 +2670,7 @@ log(patrol.name + ": " + dist)
             indTeam.order = order;
             teamLeader.token.set("aura1_color",colours.black);
             let shock = parseInt(teamLeader.token.get("bar3_value"));
-            switch (action) {
+            switch (order) {
                 case 'Stand and Fire':
                     outputCard.body.push("[#ff0000]" + indTeam.name + " fires at full effect[/#]");
                     break;
