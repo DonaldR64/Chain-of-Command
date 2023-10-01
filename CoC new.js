@@ -633,10 +633,12 @@ const CoC = (() => {
             this.initiative = 0;
             this.leaderTeamIDs = [];
             this.soloNCO = false; //true if is an unattached NCO
-            if (this.rank === 1 || this.rank === 2) {
+            if (this.special.includes("Junior Leader")) {
                 this.initiative = 2;
-            } else if (this.rank > 2) {
-                this.initiative = this.rank;
+            } else if (this.special.includes("Senior Leader")) {
+                this.initiative = 3;
+            } else if (this.special.includes("Ranking Leader")) {
+                this.initiative = 4;
             }
             this.hexList = [hex]; //hexes that have parts of larger token, mainly for LOS 
             hexMap[hexLabel].tokenIDs.push(tokenID);
