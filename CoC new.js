@@ -106,6 +106,7 @@ const CoC = (() => {
         "#00ff00": {name: "Woods", height: 60,los: 2, cover: 2, move: 1, obstacle: 0,linear: false},
         "#93c47d": {name: "Orchard", height: 25, los: 1, cover: 2, move: 1, obstacle: 0,linear: false},
         "#b6d7a8": {name: "Scrub", height: 5, los: 1, cover: 2, move: 1, obstacle: 0,linear: false},
+        "#a61c00": {name: "Pit", height: 0, los: 0, cover: 3, move: 1, obstacle: 0,linear: false},
 
         "#ffffff": {name: "Ridgeline", height: 5, los: 0, cover: 3, move: 0, obstacle: 0,linear: true},
 
@@ -122,6 +123,8 @@ const CoC = (() => {
         "Medium Crops": {name: "Medium Crops",height: 3,los: 0,cover: 1,move: 1,obstacle: 0},
         "Tall Crops": {name: "Tall Crops",height: 5,los: 1,cover: 2,move: 1,obstacle: 0},
         "Tree": {name: "Tree",height: 50,los: 1,cover: 2,move: 1,obstacle: 0},
+        
+        "Trench": {name: "Trench",height: 0,los: 0,cover: 3,move: 1,obstacle: 0},
 
         "Ruins": {name: "Ruins",height: 5,los: 2,cover: 3,move: 1,obstacle: 0,linear: false},
         "Stone Building A": {name: "Stone Building",height: 15,los: 3,cover: 3,move: 1,obstacle: 0},
