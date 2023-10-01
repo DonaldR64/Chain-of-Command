@@ -15,8 +15,6 @@ const CoC = (() => {
 
     let hexMap = {}; 
     let edgeArray = [];
-    const xSpacing = 75.1985619844599;
-    const ySpacing = 66.9658278242677;
     const DIRECTIONS = ["Northeast","East","Southeast","Southwest","West","Northwest"];
 
     const colours = {
@@ -295,6 +293,9 @@ const CoC = (() => {
         let out = "<img width = "+ size + " height = " + size + " src=" + avatar + "></img>";
         return out;
     };
+
+    const xSpacing = 75.1985619844599;
+    const ySpacing = 66.9658278242677;
 
     const HexInfo = {
         size: {
