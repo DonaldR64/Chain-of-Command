@@ -1418,21 +1418,13 @@ const CoC = (() => {
 
     const Naming = (charName,nation,rank,crew,usedNames) => {
         //checks if rank name already in character name on sheet, otherwise assigns based on nation and rank level on sheet
-        let AllRanks = ["Obergefreiter","Unteroffizier","Leutnant","Hauptmann","Serzhant","Leytenant","Kapitan","Corporal","Sergeant","Platoon Sgt.","Lieutenant","Captain"];
         let NationRanks = {
-            "Germany": ["Pvt. ","Obergefreiter ","Unteroffizier ","Leutnant ","Hauptmann "],
-            "Soviet": ["Pvt. ","Serzhant ","Serzhant ","Leytenant ","Kapitan "],
-            "USA": ["Pvt. ","Sergeant ","Platoon Sgt. ","Lieutenant ","Captain "],
-            "UK": ["Pvt. ","Sergeant ","Platoon Sgt. ","Lieutenant ","Captain "],
+            "Germany": ["Pvt. ","Obergefreiter ","Unteroffizier ","Feldwebel ","Leutnant ","Hauptmann "],
+            "Soviet": ["Pvt. ","Efréĭtor ","Serzhánt ","Starshyná ","Leytenant ","Kapitán "],
+            "USA": ["Pvt. ","Cpl. ","Sgt. ","Staff Sgt. ","Lieutenant ","Captain "],
+            "UK": ["Pvt. ","Lance Cpl. ","Cpl. ","Sgt. ","Lieutenant ","Captain "],
         };
         let rankName = "";
-        for (let i=0;i<AllRanks.length;i++) {
-            r = AllRanks[i];
-            if (charName.includes(r)) {
-                rankName = r + " ";
-                break;
-            }
-        }
         if (rankName === "") {
             rankName = NationRanks[nation][rank];
         }
@@ -1444,7 +1436,7 @@ const CoC = (() => {
 
         let name = rankName + surname;
         if (crew === true) {
-            name = "Cpl. " + surname + " & Crew";
+            name += " & Crew";
         } 
 
         return name;
