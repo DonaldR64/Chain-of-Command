@@ -2624,15 +2624,12 @@ log(section)
             return;
         }
 
-/*
 
         if (size === "Team" && teamLeader.special.includes("Fire Team")) {
             //check if is a 3 man crew weapon eg MMG/HMG and has < 3 crew
             //2 men = -1 on each dice => weaponMoveMod = 1
             // 1 man = can only rotate - change action to "Rotate"
-
         }
-*/
 
 
         let weaponMoveMod = 0;
