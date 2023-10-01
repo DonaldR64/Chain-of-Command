@@ -83,6 +83,21 @@ const CoC = (() => {
             "covering": "",
             "platoonmarkers": ["","letters_and_numbers0148::4815284","letters_and_numbers0149::4815285","letters_and_numbers0150::4815286","letters_and_numbers0151::4815287","letters_and_numbers0152::4815288","letters_and_numbers0153::4815289","letters_and_numbers0154::4815290","letters_and_numbers0155::4815291","letters_and_numbers0156::4815292","letters_and_numbers0157::4815293","letters_and_numbers0158::4815294","letters_and_numbers0159::4815295","letters_and_numbers0160::4815296","letters_and_numbers0161::4815297","letters_and_numbers0162::4815298","letters_and_numbers0163::4815299","letters_and_numbers0164::4815300","letters_and_numbers0165::4815301","letters_and_numbers0166::4815302","letters_and_numbers0167::4815303","letters_and_numbers0168::4815304","letters_and_numbers0169::4815305","letters_and_numbers0170::4815306","letters_and_numbers0171::4815307","letters_and_numbers0172::4815308","letters_and_numbers0173::4815309"],
         },
+        "USA": {
+            "image": "https://s3.amazonaws.com/files.d20.io/images/327595663/Nwyhbv22KB4_xvwYEbL3PQ/thumb.png?1676165491",
+            "backgroundColour": "#FFFFFF",
+            "dice": "USA",
+            "titlefont": "Arial",
+            "fontColour": "#006400",
+            "borderColour": "#006400",
+            "borderStyle": "5px double",
+            "overwatch": "",
+            "covering": "",
+            "platoonmarkers": ["","letters_and_numbers0050::4815186","letters_and_numbers0051::4815187","letters_and_numbers0052::4815188","letters_and_numbers0053::4815189","letters_and_numbers0054::4815190","letters_and_numbers0055::4815191","letters_and_numbers0056::4815192","letters_and_numbers0057::4815193","letters_and_numbers0058::4815194","letters_and_numbers0059::4815195","letters_and_numbers0060::4815196","letters_and_numbers0061::4815197","letters_and_numbers0062::4815198","letters_and_numbers0063::4815199","letters_and_numbers0064::4815200","letters_and_numbers0065::4815201","letters_and_numbers0066::4815202","letters_and_numbers0067::4815203","letters_and_numbers0068::4815204","letters_and_numbers0069::4815205","letters_and_numbers0070::4815206","letters_and_numbers0071::4815207","letters_and_numbers0072::4815208","letters_and_numbers0073::4815209","letters_and_numbers0074::4815210","letters_and_numbers0075::4815211"],
+        },
+
+
+
         "Neutral": {
             "image": "",
             "backgroundColour": "#FFFFFF",
@@ -1906,7 +1921,7 @@ log("Other side of Partial LOS Blocking Terrain")
             section.add(team);
         } else if (unitComp === "Sr. Leader") {
             teamName = sectionName;
-            let team = new Team(player,nation,stringGen(),sectionName,sectionID);
+            let team = new Team(player,nation,stringGen(),teamName,sectionID);
             let model = new Model(refToken.id,sectionID,team.id,false);
             team.add(model);
             section.add(team);
@@ -1915,11 +1930,11 @@ log("Other side of Partial LOS Blocking Terrain")
                 name: model.name,
                 tint_color: "transparent",
                 aura1_color: colours.green,
-                aura1_radius: 0.1,
+                aura1_radius: 2,
                 showplayers_bar1: true,
                 showname: true,
                 showplayers_aura1: true,
-                bar1_value: team.initiative,
+                bar1_value: model.initiative,
                 showplayers_bar3: true,
                 bar3_value: 0,
                 gmnotes: gmn,
