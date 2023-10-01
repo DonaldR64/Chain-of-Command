@@ -121,6 +121,7 @@ const CoC = (() => {
         "Ploughed Field": {name: "Ploughed Field",height: 0,los:0,cover: 0,move: 1, obstacle: 0},
         "Medium Crops": {name: "Medium Crops",height: 3,los: 0,cover: 1,move: 1,obstacle: 0},
         "Tall Crops": {name: "Tall Crops",height: 5,los: 1,cover: 2,move: 1,obstacle: 0},
+        "Tree": {name: "Tree",height: 50,los: 1,cover: 2,move: 1,obstacle: 0},
 
         "Ruins": {name: "Ruins",height: 5,los: 2,cover: 3,move: 1,obstacle: 0,linear: false},
         "Stone Building A": {name: "Stone Building",height: 15,los: 3,cover: 3,move: 1,obstacle: 0},
