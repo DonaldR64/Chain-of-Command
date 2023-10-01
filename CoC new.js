@@ -573,9 +573,19 @@ const CoC = (() => {
             let crew = false;
             if (special.includes("Crew")) {crew = true};
             let rank = parseInt(attributeArray.rank);
+            
+            let team = TeamArray[teamID];
+            let usedNames = [];
+            for (let i=0;i<team.modelIDs.length;i++) {
+                let m = ModelArray[team.modelIDs[i]];
+                let surname = m.name.split(" ");
+                surname = surname.slice(-1);
+                usedNames.push(surname.toString());
+            }
+            usedNames = [...new Set(usedNames)];
             let name;
             if (existing === false) {
-                name = Naming(charName,nation,rank,crew);
+                name = Naming(charName,nation,rank,crew,usedNames);
             } else {
                 name = token.get("name");
             }
@@ -1299,6 +1309,7 @@ const CoC = (() => {
                 let markers = token.get("statusmarkers");
                 let teamMarker = Nations[nation].platoonmarkers.filter(value => Nations[nation].platoonmarkers.includes(value));
                 team.symbol = teamMarker;
+                section.add(team);
             }
             let model = new Model(token.id,sectionID,teamID,true);
             team.add(model);
@@ -1385,14 +1396,14 @@ const CoC = (() => {
     };
 
 
-    const Naming = (charName,nation,rank,crew) => {
+    const Naming = (charName,nation,rank,crew,usedNames) => {
         //checks if rank name already in character name on sheet, otherwise assigns based on nation and rank level on sheet
         let AllRanks = ["Obergefreiter","Unteroffizier","Leutnant","Hauptmann","Serzhant","Leytenant","Kapitan","Corporal","Sergeant","Platoon Sgt.","Lieutenant","Captain"];
         let NationRanks = {
-            "Germany": ["Pvt.","Obergefreiter ","Unteroffizier ","Leutnant ","Hauptmann "],
-            "Soviet": ["Pvt.","Serzhant ","Serzhant ","Leytenant ","Kapitan "],
-            "USA": ["Pvt.","Sergeant ","Platoon Sgt. ","Lieutenant ","Captain "],
-            "UK": ["Pvt.","Sergeant ","Platoon Sgt. ","Lieutenant ","Captain "],
+            "Germany": ["Pvt. ","Obergefreiter ","Unteroffizier ","Leutnant ","Hauptmann "],
+            "Soviet": ["Pvt. ","Serzhant ","Serzhant ","Leytenant ","Kapitan "],
+            "USA": ["Pvt. ","Sergeant ","Platoon Sgt. ","Lieutenant ","Captain "],
+            "UK": ["Pvt. ","Sergeant ","Platoon Sgt. ","Lieutenant ","Captain "],
         };
         let rankName = "";
         for (let i=0;i<AllRanks.length;i++) {
@@ -1405,9 +1416,15 @@ const CoC = (() => {
         if (rankName === "") {
             rankName = NationRanks[nation][rank];
         }
-        let name = rankName + Surname(nation);
+        let surname;
+        do {
+            surname = Surname(nation);
+        }
+        while (usedNames.includes(surname) === true);
+
+        let name = rankName + surname;
         if (crew === true) {
-            name = "Cpl. " + Surname(nation) + " & Crew";
+            name = "Cpl. " + surname + " & Crew";
         } 
 
         return name;
@@ -2568,10 +2585,10 @@ log(patrol.name + ": " + dist)
             }
         }
         SetupCard(order,requires,model.nation);
-
-        if (size === "Section" && errorMsg !== "") {
+log(size)
+log(section)
+        if (size === "Section" && errorMsg === "") {
             //check if other team(s) are in range and valid to activate
-            let valid = false;
             for (let i=0;i<section.teamIDs.length;i++) {
                 let team2 = TeamArray[section.teamIDs[i]];
                 if (team2.id === team1.id) {continue};
@@ -2602,6 +2619,17 @@ log(patrol.name + ": " + dist)
             PrintCard();
             return;
         }
+
+/*
+
+        if (size === "Team" && teamLeader.special.includes("Fire Team")) {
+            //check if is a 3 man crew weapon eg MMG/HMG and has < 3 crew
+            //2 men = -1 on each dice => weaponMoveMod = 1
+            // 1 man = can only rotate - change action to "Rotate"
+
+        }
+*/
+
 
         let weaponMoveMod = 0;
         let moveDice = [];
@@ -2670,6 +2698,9 @@ log(patrol.name + ": " + dist)
             indTeam.order = order;
             teamLeader.token.set("aura1_color",colours.black);
             let shock = parseInt(teamLeader.token.get("bar3_value"));
+            if (teamLeader.special.includes("Leader")) {
+                outputCard.body.push(teamLeader.name + " accompanies the Section but may not use his Command Initiative this Phase");
+            }
             switch (order) {
                 case 'Stand and Fire':
                     outputCard.body.push("[#ff0000]" + indTeam.name + " fires at full effect[/#]");
@@ -2730,52 +2761,131 @@ log(patrol.name + ": " + dist)
                 outputCard.body.push("Teams takes 1 point of Shock each");
                 break;
         }
-
-
-/*
-        let ncoIDs = [];
-        for (let i=0;i<teams.length;i++) {
-            let team = teams[i];
-            for (let j=0;j<team.nco.length;j++) {
-                let ncoID = team.nco[j];
-                let ncoBase = BaseArray[ncoID];
-                if (ncoIDs.includes(ncoID) === false) {
-                    ncoBase.token.set("aura1_color",colours.black);
-                    outputCard.body.push("[#ff0000]" + ncoBase.name + " accompanies the Squad but may not use his Command Initiative this Phase[/#]");
-                    ncoBase.token.set(sm.tactical,false);
-                    ncoBase.token.set(sm.overwatch,false);
-                    if (action === "Tactical Move") {
-                        ncoBase.token.set(sm.tactical,true);
-                    }
-                    ncoIDs.push(ncoID); //in case attached to multiple teams
-                }
-            }
-            for (let j=0;j<team.co.length;j++) {
-                let coID = team.co[j];
-                let coBase = BaseArray[coID];
-                if (coIDs.includes(coID) === false) {
-                    coBase.token.set("aura1_color",colours.black);
-                    outputCard.body.push("[#ff0000]" + coBase.name + " accompanies the Squad but may not use his Command Initiative this Phase[/#]");
-                    coBase.token.set(sm.tactical,false);
-                    coBase.token.set(sm.overwatch,false);
-                    if (action === "Tactical Move") {
-                        coBase.token.set(sm.tactical,true);
-                    }
-                    coIDs.push(coID); //in case attached to multiple teams
-                }
-            }
-        }
-*/
         PrintCard();
     }
 
 
 
+    const AddAbility = (abilityName,action,charID) => {
+        createObj("ability", {
+            name: abilityName,
+            characterid: charID,
+            action: action,
+            istokenaction: true,
+        })
+    }    
+
+    const AddAbilities = (msg) => {
+        if (!msg) {return}
+        let id = msg.selected[0]._id;
+        if (!id) {return};
+        let token = findObjs({_type:"graphic", id: id})[0];
+        let char = getObj("character", token.get("represents"));
+        let abilityName,action;
+        let abilArray = findObjs({  _type: "ability", _characterid: char.id});
+        //clear old abilities
+        for(let a=0;a<abilArray.length;a++) {
+            abilArray[a].remove();
+        } 
+        let type = Attribute(char,"type");
+
+        if (type === "Infantry") {
+            let rank = Attribute(char,"rank");
+            let special = Attribute(char,"special");
+            if (rank < 1) {
+                abilityName = "Activate" ;
+                if (special.includes("Section Only") === false) {
+                    action = "!Activate;@{selected|token_id};?{Unit|Team|Section};?{Action|Stand and Fire|Tactical Move|Move and Fire|Normal Move|At the Double|Covering Fire|Deploy}";
+                    AddAbility(abilityName,action,char.id);
+                }
+                if (special.includes("Section Only") === true) {
+                    action = "!Activate;@{selected|token_id};Section;?{Action|Stand and Fire|Tactical Move|Move and Fire|Normal Move|At the Double|Covering Fire|Deploy}";
+                    AddAbility(abilityName,action,char.id);
+                } 
+                if (special.includes("Fire Team") === true) {
+                    action = "!Activate;@{selected|token_id};Team;?{Action|Stand and Fire|Tactical Move|Move and Fire|Normal Move|At the Double|Covering Fire|Deploy}";
+                    AddAbility(abilityName,action,char.id);
+                } 
+                abilityName = "Overwatch";
+                action = "!Activate;@{selected|token_id};Team;Overwatch";
+                AddAbility(abilityName,action,char.id);
+
+                abilityName = "Rejoin";
+                action = "!Rejoin;@{selected|token_id}";
+                AddAbility(abilityName,action,char.id);
+
+                abilityName = "Fire";
+                action = "!Fire;@{selected|token_id};@{target|token_id}";
+                AddAbility(abilityName,action,char.id);
+
+
+            } else {
+                //Leader
+                abilityName = "Order Unit";
+                action = "!Order;@{selected|token_id};?{Order|Activate|Overwatch|Covering Fire|Rally|Throw/Fire Grenade|Smoke Grenades|Fire Squad AT Weapon|Transfer Man to Team|Detach Team};@{target|token_id}";
+                AddAbility(abilityName,action,char.id);
+                abilityName = "Move";
+                action = "!LeaderSelf;@{selected|token_id};?{Tactical Move|Normal Move|At the Double|Deploy}";
+                AddAbility(abilityName,action,char.id);
+                abilityName = "Join Team";
+                action = "!LeaderJoin;@{selected|token_id};@{target|token_id}";
+                AddAbility(abilityName,action,char.id);
+
+
+
+            }
 
 
 
 
 
+        }
+
+        if (type === "Gun") {
+            let special = Attribute(char,"special");
+            abilityName = "[1] Activate Team";
+            if (special.includes("Immobile")) {
+                action = "!Activate;@{selected|token_id};Team;?{Stand and Fire|Rotate|Deploy}";
+            } else {
+                action = "!Activate;@{selected|token_id};Team;?{Stand and Fire|Rotate|Normal Move|Deploy}";
+            }
+            AddAbility(abilityName,action,char.id);
+            abilityName = "Fire";
+            action = "!Fire;@{selected|token_id};@{target|token_id}";
+            AddAbility(abilityName,action,char.id);
+
+
+
+
+
+        }
+
+
+
+
+
+    }
+
+
+    const TeamsInRange = (team1,team2) => {
+        //returns true if a member of 1 is in range of a member of 2
+        let inRange = false;
+        inRangeLoop1:
+        for (let i=0;i<team1.modelIDs.length;i++) {
+            let id1 = team1.modelIDs[i];
+            let model1 = ModelArray[id1];
+            for (let j=0;j<team2.modelIDs.length;j++) {
+                let id2 = team2.modelIDs[j];
+                let model2 = ModelArray[id2];
+                let dist = ModelDistance(model1,model2).distance;
+                if (dist <= 40) {
+                    inRange = true;
+                    break inRangeLoop1;
+                }
+            }
+        }
+        return inRange;
+    }
 
 
 
@@ -2854,6 +2964,9 @@ log(patrol.name + ": " + dist)
                 break;
             case '!Activate':
                 UnitActivation(msg);
+                break;
+            case '!AddAbilities':
+                AddAbilities(msg);
                 break;
         }
     };
