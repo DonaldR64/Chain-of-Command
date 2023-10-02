@@ -2766,7 +2766,7 @@ log(patrol.name + ": " + dist)
                 case 'At the Double':
                     move = Math.max(0,moveDice[0] + moveDice[1] + moveDice[2] - shock  - (3*weaponMoveMod)) + '"'; 
                     if (leaderFlag === true && parseInt(teamLeader.token.get("bar1_value")) < parseInt(teamLeader.token.get("bar1_max"))) {
-                        move = Math.max(0,moveDice[0] + moveDice[1] - shock  - (2*weaponMoveMod)) + '" (wounded)'; 
+                        move = Math.max(0,moveDice[0] + moveDice[1]) + '" (wounded)'; 
                     } else {
                         teamLeader.token.set("bar3_value",(shock+1));
                     }
