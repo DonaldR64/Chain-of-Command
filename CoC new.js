@@ -1938,6 +1938,7 @@ log("Other side of Partial LOS Blocking Terrain")
                 showname: true,
                 showplayers_aura1: false,
                 bar1_value: model.initiative,
+                bar1_max: model.initiative,
                 showplayers_bar3: true,
                 bar3_value: 0,
                 gmnotes: gmn,
@@ -1955,6 +1956,7 @@ log("Other side of Partial LOS Blocking Terrain")
                     //should be "Crew of X"
                     let index = model.special.indexOf("Crew") + 8;
                     hp = parseInt(model.special.charAt(index));
+                    model.token.set("bar1_max",hp);
                 }            
                 model.token.set({
                     name: model.name,
@@ -2026,6 +2028,9 @@ log("Other side of Partial LOS Blocking Terrain")
                     }            
                     if (model.initiative > 0) {
                         hp = model.initiative;
+                    }
+                    if (hp > 1) {
+                        model.token.set("bar1_max",hp);
                     }
                     model.token.set({
                         name: model.name,
@@ -2613,8 +2618,7 @@ log(patrol.name + ": " + dist)
             }
         }
         SetupCard(order,requires,model.nation);
-log(size)
-log(section)
+
         if (size === "Section" && errorMsg === "") {
             //check if other team(s) are in range and valid to activate
             for (let i=0;i<section.teamIDs.length;i++) {
@@ -2723,22 +2727,23 @@ log(section)
             let teamLeader = ModelArray[indTeam.modelIDs[0]];
             indTeam.order = order;
             let shock = parseInt(teamLeader.token.get("bar3_value"));
+            let itName = indTeam.name;
             if (teamLeader.special.includes("Leader")) {
                 leaderFlag = true;
+                itName = teamLeader.name;
                 outputCard.body.push(teamLeader.name + " accompanies the Section but may not use his Command Initiative this Phase");
-                
             }
             switch (order) {
                 case 'Stand and Fire':
-                    outputCard.body.push("[#ff0000]" + indTeam.name + " fires at full effect[/#]");
+                    outputCard.body.push("[#ff0000]" + itName + " fires at full effect[/#]");
                     break;
                 case 'Tactical Move':
                     move = Math.max(0,moveDice[0] - shock) + '"';
-                    outputCard.body.push("[#ff0000]" + indTeam.name + " can move " + move + "[/#]");
+                    outputCard.body.push("[#ff0000]" + itName + " can move " + move + "[/#]");
                     break;
                 case 'Move and Fire':
                     move = Math.max(0,moveDice[0] - shock - weaponMoveMod) + '"';
-                    outputCard.body.push("[#ff0000]" + indTeam.name + " can move " + move + "[/#]");
+                    outputCard.body.push("[#ff0000]" + itName + " can move " + move + "[/#]");
                     break;
                 case 'Normal Move':
                     move = Math.max(0,moveDice[0] + moveDice[1] - shock  - (2*weaponMoveMod)) + '"';
@@ -2746,27 +2751,27 @@ log(section)
                     move3 = Math.max(0,Math.min(moveDice[0],moveDice[1]) - shock) + '"';
                     if (teamLeader.type === "Gun") {
                         if (teamLeader.special.includes("Light")) {
-                            outputCard.body.push("[#ff0000]" + indTeam.name + " can move " + move + "[/#]");   
+                            outputCard.body.push("[#ff0000]" + itName + " can move " + move + "[/#]");   
                         } else if (teamLeader.special.includes("Medium")) {
-                            outputCard.body.push("[#ff0000]" + indTeam.name + " can move " + move2 + "[/#]");
+                            outputCard.body.push("[#ff0000]" + itName + " can move " + move2 + "[/#]");
                         } else if (teamLeader.special.includes("Heavy")) {
-                            outputCard.body.push("[#ff0000]" + indTeam.name + " can move " + move3 + "[/#]");
+                            outputCard.body.push("[#ff0000]" + itName + " can move " + move3 + "[/#]");
                         }
                         outputCard.body.push("The Team may not cross Obstacles");
                     } else {
-                        outputCard.body.push("[#ff0000]" + indTeam.name  + " can move " + move + "[/#]");
+                        outputCard.body.push("[#ff0000]" + itName  + " can move " + move + "[/#]");
                         outputCard.body.push('Low Obstacle/Building: ' + move2);
                         outputCard.body.push('Medium Obstacle: ' + move3);
                     }
                     break;
                 case 'At the Double':
                     move = Math.max(0,moveDice[0] + moveDice[1] + moveDice[2] - shock  - (3*weaponMoveMod)) + '"'; 
-                    if (leaderFlag === true) {
+                    if (leaderFlag === true && parseInt(teamLeader.token.get("bar1_value")) < parseInt(teamLeader.token.get("bar1_max"))) {
                         move = Math.max(0,moveDice[0] + moveDice[1] - shock  - (2*weaponMoveMod)) + '" (wounded)'; 
                     } else {
                         teamLeader.token.set("bar3_value",(shock+1));
                     }
-                    outputCard.body.push("[#ff0000]" + indTeam.name + " can move " + move + "[/#]");
+                    outputCard.body.push("[#ff0000]" + itName + " can move " + move + "[/#]");
                     break;
             }
         });
