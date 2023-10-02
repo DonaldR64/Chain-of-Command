@@ -2800,8 +2800,6 @@ log(patrol.name + ": " + dist)
         PrintCard();
     }
 
-
-
     const AddAbility = (abilityName,action,charID) => {
         createObj("ability", {
             name: abilityName,
@@ -2828,7 +2826,7 @@ log(patrol.name + ": " + dist)
         if (type === "Infantry") {
             let rank = Attribute(char,"rank");
             let special = Attribute(char,"special");
-            if (rank < 1) {
+            if (rank < 3) {
                 abilityName = "Activate" ;
                 if (special.includes("Section Only") === false) {
                     action = "!Activate;@{selected|token_id};?{Unit|Team|Section};?{Action|Stand and Fire|Tactical Move|Move and Fire|Normal Move|At the Double|Covering Fire|Deploy}";
