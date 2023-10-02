@@ -727,70 +727,70 @@ const CoC = (() => {
 
     const WeaponArray = {
         SMG: {
-            Close: {Range: 6, FP: 4},
-            Eff: {Range: 12, FP: 2},
+            Close: {Range: 60, FP: 4},
+            Eff: {Range: 120, FP: 2},
             Reroll: false,
             Penalty: 0,
             Cover: "Nil",
         },
         Rifle: {
-            Close: {Range: 18, FP: 1},
-            Eff: {Range: 150, FP: 1},
+            Close: {Range: 180, FP: 1},
+            Eff: {Range: 1500, FP: 1},
             Reroll: false,
             Penalty: 0,
             Cover: "Nil",
         },
         Carbine: {
-            Close: {Range: 18, FP: 1},
-            Eff: {Range: 150, FP: 1},
+            Close: {Range: 180, FP: 1},
+            Eff: {Range: 1500, FP: 1},
             Reroll: true,
             Penalty: 0,
             Cover: "Nil",
         },
         BAR: {
-            Close: {Range: 18, FP: 3},
-            Eff: {Range: 150, FP: 3},
+            Close: {Range: 180, FP: 3},
+            Eff: {Range: 1500, FP: 3},
             Reroll: true,
             Penalty: 0,
             Cover: "Nil",
         },
         "Magazine LMG": {
-            Close: {Range: 18, FP: 6},
-            Eff: {Range: 150, FP: 6},
+            Close: {Range: 180, FP: 6},
+            Eff: {Range: 1500, FP: 6},
             Reroll: false,
             Penalty: 2,
             Cover: "Nil",
         },
         "Belt-Fed LMG": {
-            Close: {Range: 18, FP: 8},
-            Eff: {Range: 150, FP: 8},
+            Close: {Range: 180, FP: 8},
+            Eff: {Range: 1500, FP: 8},
             Reroll: false,
             Penalty: 3,
             Cover: "Nil",
         },
         SMG: {
-            Close: {Range: 6, FP: 4},
-            Eff: {Range: 12, FP: 2},
+            Close: {Range: 60, FP: 4},
+            Eff: {Range: 120, FP: 2},
             Reroll: false,
             Penalty: 0,
             Cover: "Nil",
         },
         "Assault Rifle": {
-            Close: {Range: 18, FP: 3},
-            Eff: {Range: 48, FP: 1},
+            Close: {Range: 180, FP: 3},
+            Eff: {Range: 480, FP: 1},
             Reroll: false,
             Penalty: 0,
             Cover: "Nil",
         },
         "MMG/HMG": {
-            Close: {Range: 24, FP: 10},
-            Eff: {Range: 150, FP: 10},
+            Close: {Range: 240, FP: 10},
+            Eff: {Range: 1500, FP: 10},
             Reroll: false,
             Penalty: 3,
             Cover: "Reduces",
         },
         "Pistol": {
-            Close: {Range: 9, FP: 1},
+            Close: {Range: 90, FP: 1},
             Eff: {Range: 0, FP: 0},
             Reroll: false,
             Penalty: 0,
@@ -816,7 +816,7 @@ const CoC = (() => {
         let closestHex = model2.hex;
         for (let j=0;j<hexes.length;j++) {
             let hex2 = hexes[j];
-            let dist = model1.hex.distance(hex2);
+            let dist = model1.hex.distance(hex2) * MapScale;
             if (dist < closestDist) {
                 closestDist = dist;
                 closestHex = hex2;
@@ -1490,7 +1490,7 @@ const CoC = (() => {
         }
 
         let distanceInfo = ModelDistance(model1,model2);
-        let distanceT1T2 = distanceInfo.distance * MapScale; //in feet
+        let distanceT1T2 = distanceInfo.distance; //in feet
         let phi = distanceInfo.phi; //angle from model1 to model2 taking into account model1's rotation
 
         let hex1 = hexMap[model1.hexLabel];
@@ -1591,9 +1591,9 @@ log(fm.name + " Player: " + fm.player)
                 let fHexes = fm.hexList;
                 for (let u=0;u<fHexes.length;u++) {
                     let fHex = fHexes[u];
-                    let dis = fHex.distance(qrs)
+                    let dis = fHex.distance(qrs) * MapScale;
 log("Friendlies Hex: " + fHex.label() + " / Distance " + dis)
-                    if (dis < 2) {
+                    if (dis < 20) {
                         friendlyFlag = true;
                         friendlyHeight = Math.max(fm.height,friendlyHeight);
                         if (special === "Flamethrower") {friendlyHeight = 100}; //basically cant fire Flamethrower over heads of friendlies
@@ -1791,6 +1791,13 @@ log("Other side of Partial LOS Blocking Terrain")
         outputCard.body.push("Elevation: " + elevation + " Feet");
         outputCard.body.push("[hr]");
         outputCard.body.push("Team: " + team.name);
+        let order = team.order;
+        if (order === "") { 
+            outputCard.body.push("Has not been activated this Phase");
+        } else {
+            outputCard.body.push("Activated with " + team.order);
+        }
+
         for (let i=0;i<team.modelIDs.length;i++) {
             let m = ModelArray[team.modelIDs[i]];
             outputCard.body.push(m.name);
