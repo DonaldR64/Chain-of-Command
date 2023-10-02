@@ -2719,10 +2719,12 @@ log(section)
         teamIDs.forEach((id) => {
             let indTeam = TeamArray[id];
             let move;
+            let leaderFlag = false;
             let teamLeader = ModelArray[indTeam.modelIDs[0]];
             indTeam.order = order;
             let shock = parseInt(teamLeader.token.get("bar3_value"));
             if (teamLeader.special.includes("Leader")) {
+                leaderFlag = true;
                 outputCard.body.push(teamLeader.name + " accompanies the Section but may not use his Command Initiative this Phase");
             }
             switch (order) {
@@ -2753,13 +2755,15 @@ log(section)
                     } else {
                         outputCard.body.push("[#ff0000]" + indTeam.name  + " can move " + move + "[/#]");
                         outputCard.body.push('Low Obstacle/Building: ' + move2);
-                        outputCard.body.push('High Obstacle: ' + move3);
+                        outputCard.body.push('Medium Obstacle: ' + move3);
                     }
                     break;
                 case 'At the Double':
                     move = Math.max(0,moveDice[0] + moveDice[1] + moveDice[2] - shock  - (3*weaponMoveMod)) + '"'; 
                     outputCard.body.push("[#ff0000]" + indTeam.name + " can move " + move + "[/#]");
-                    teamLeader.token.set("bar3_value",(shock+1));
+                    if (leaderFlag === false) {
+                        teamLeader.token.set("bar3_value",(shock+1));
+                    }
                     break;
             }
         });
