@@ -17,16 +17,22 @@ const CoC = (() => {
     let edgeArray = [];
     const DIRECTIONS = ["Northeast","East","Southeast","Southwest","West","Northwest"];
 
-    const colours = {
-        red: "#ff0000",
-        blue: "#00ffff",
-        yellow: "#ffff00",
+
+
+    const Colours = {
         green: "#00ff00",
+        lightblue: "#00ffff",
         purple: "#800080",
+        brown: "#980000",
+        red: "#ff0000",
+        yellow: "#ffff00",
+        orange: "#ff9900",
+        darkblue: "#0000ff",
+        lightpurple: "#ff00ff",
         black: "#000000",
     }
 
-    const sm = {
+    const SM = {
         overwatch: "status_sentry-gun",
         tactical: "status_Prone::2006547",
         order: "status_green",
@@ -57,7 +63,7 @@ const CoC = (() => {
             "borderStyle": "5px ridge",
             "overwatch": "-N_aLWelhXtAj2-HmbhX",
             "covering": "-N_aLMELJpCFCSdc38-r",
-            "platoonmarkers": ["","letters_and_numbers0099::4815235","letters_and_numbers0100::4815236","letters_and_numbers0101::4815237","letters_and_numbers0102::4815238","letters_and_numbers0103::4815239","letters_and_numbers0104::4815240","letters_and_numbers0105::4815241","letters_and_numbers0106::4815242","letters_and_numbers0107::4815243","letters_and_numbers0108::4815244","letters_and_numbers0109::4815245","letters_and_numbers0110::4815246","letters_and_numbers0111::4815247","letters_and_numbers0112::4815248","letters_and_numbers0113::4815249","letters_and_numbers0114::4815250","letters_and_numbers0115::4815251","letters_and_numbers0116::4815252","letters_and_numbers0117::4815253","letters_and_numbers0118::4815254","letters_and_numbers0119::4815255","letters_and_numbers0120::4815256","letters_and_numbers0121::4815257","letters_and_numbers0122::4815258","letters_and_numbers0123::4815259","letters_and_numbers0124::4815260"],       
+            "teammarkers": ["letters_and_numbers0099::4815235","letters_and_numbers0100::4815236","letters_and_numbers0101::4815237","letters_and_numbers0102::4815238","letters_and_numbers0103::4815239","letters_and_numbers0104::4815240","letters_and_numbers0105::4815241","letters_and_numbers0106::4815242","letters_and_numbers0107::4815243","letters_and_numbers0108::4815244"],       
         },
         "Germany": {
             "image": "https://s3.amazonaws.com/files.d20.io/images/329415788/ypEgv2eFi-BKX3YK6q_uOQ/thumb.png?1677173028",
@@ -69,7 +75,7 @@ const CoC = (() => {
             "borderStyle": "5px double",
             "overwatch": "-N_aLRXvf68lFjYj5V3V",
             "covering": "-N_aLD7-Jrij3WlVHaUl",
-            "platoonmarkers": ["","letters_and_numbers0197::4815333","letters_and_numbers0198::4815334","letters_and_numbers0199::4815335","letters_and_numbers0200::4815336","letters_and_numbers0201::4815337","letters_and_numbers0202::4815338","letters_and_numbers0203::4815339","letters_and_numbers0204::4815340","letters_and_numbers0205::4815341","letters_and_numbers0206::4815342","letters_and_numbers0207::4815343","letters_and_numbers0208::4815344","letters_and_numbers0209::4815345","letters_and_numbers0210::4815346","letters_and_numbers0211::4815347","letters_and_numbers0212::4815348","letters_and_numbers0213::4815349","letters_and_numbers0214::4815350","letters_and_numbers0215::4815351","letters_and_numbers0216::4815352","letters_and_numbers0217::4815353","letters_and_numbers0218::4815354","letters_and_numbers0219::4815355","letters_and_numbers0220::4815356","letters_and_numbers0221::4815357","letters_and_numbers0222::4815358"],   
+            "teammarkers": ["letters_and_numbers0197::4815333","letters_and_numbers0198::4815334","letters_and_numbers0199::4815335","letters_and_numbers0200::4815336","letters_and_numbers0201::4815337","letters_and_numbers0202::4815338","letters_and_numbers0203::4815339","letters_and_numbers0204::4815340","letters_and_numbers0205::4815341","letters_and_numbers0206::4815342"],   
         },
         "UK": {
             "image": "https://s3.amazonaws.com/files.d20.io/images/330506939/YtTgDTM3q7p8m0fJ4-E13A/thumb.png?1677713592",
@@ -81,7 +87,7 @@ const CoC = (() => {
             "borderStyle": "5px groove",
             "overwatch": "",
             "covering": "",
-            "platoonmarkers": ["","letters_and_numbers0148::4815284","letters_and_numbers0149::4815285","letters_and_numbers0150::4815286","letters_and_numbers0151::4815287","letters_and_numbers0152::4815288","letters_and_numbers0153::4815289","letters_and_numbers0154::4815290","letters_and_numbers0155::4815291","letters_and_numbers0156::4815292","letters_and_numbers0157::4815293","letters_and_numbers0158::4815294","letters_and_numbers0159::4815295","letters_and_numbers0160::4815296","letters_and_numbers0161::4815297","letters_and_numbers0162::4815298","letters_and_numbers0163::4815299","letters_and_numbers0164::4815300","letters_and_numbers0165::4815301","letters_and_numbers0166::4815302","letters_and_numbers0167::4815303","letters_and_numbers0168::4815304","letters_and_numbers0169::4815305","letters_and_numbers0170::4815306","letters_and_numbers0171::4815307","letters_and_numbers0172::4815308","letters_and_numbers0173::4815309"],
+            "teammarkers": ["letters_and_numbers0148::4815284","letters_and_numbers0149::4815285","letters_and_numbers0150::4815286","letters_and_numbers0151::4815287","letters_and_numbers0152::4815288","letters_and_numbers0153::4815289","letters_and_numbers0154::4815290","letters_and_numbers0155::4815291","letters_and_numbers0156::4815292","letters_and_numbers0157::4815293"],
         },
         "USA": {
             "image": "https://s3.amazonaws.com/files.d20.io/images/327595663/Nwyhbv22KB4_xvwYEbL3PQ/thumb.png?1676165491",
@@ -93,7 +99,7 @@ const CoC = (() => {
             "borderStyle": "5px double",
             "overwatch": "",
             "covering": "",
-            "platoonmarkers": ["","letters_and_numbers0050::4815186","letters_and_numbers0051::4815187","letters_and_numbers0052::4815188","letters_and_numbers0053::4815189","letters_and_numbers0054::4815190","letters_and_numbers0055::4815191","letters_and_numbers0056::4815192","letters_and_numbers0057::4815193","letters_and_numbers0058::4815194","letters_and_numbers0059::4815195","letters_and_numbers0060::4815196","letters_and_numbers0061::4815197","letters_and_numbers0062::4815198","letters_and_numbers0063::4815199","letters_and_numbers0064::4815200","letters_and_numbers0065::4815201","letters_and_numbers0066::4815202","letters_and_numbers0067::4815203","letters_and_numbers0068::4815204","letters_and_numbers0069::4815205","letters_and_numbers0070::4815206","letters_and_numbers0071::4815207","letters_and_numbers0072::4815208","letters_and_numbers0073::4815209","letters_and_numbers0074::4815210","letters_and_numbers0075::4815211"],
+            "teammarkers": ["letters_and_numbers0050::4815186","letters_and_numbers0051::4815187","letters_and_numbers0052::4815188","letters_and_numbers0053::4815189","letters_and_numbers0054::4815190","letters_and_numbers0055::4815191","letters_and_numbers0056::4815192","letters_and_numbers0057::4815193","letters_and_numbers0058::4815194","letters_and_numbers0059::4815195"],
         },
 
 
@@ -474,7 +480,7 @@ const CoC = (() => {
     };
 
     class Section {
-        constructor(player,nation,sectionID,sectionName,core) {
+        constructor(player,nation,sectionID,sectionName,core,sectionColour) {
             if (!sectionID) {
                 sectionID = stringGen();
             }
@@ -484,6 +490,7 @@ const CoC = (() => {
             this.nation = nation;
             this.teamIDs = [];
             this.core = core;
+            this.colour = sectionColour; //different sections
 
             SectionArray[sectionID] = this;
         }
@@ -525,7 +532,7 @@ const CoC = (() => {
 
         add(model) {
             if (this.modelIDs.includes(model.id) === false) {
-                if (model.special.includes("Crew")) {
+                if (model.special.includes("Crew") || model.token.get("status_black-flag") === true) {
                     this.modelIDs.unshift(model.id);
                 } else {
                     this.modelIDs.push(model.id);
@@ -535,11 +542,9 @@ const CoC = (() => {
 
         leader() {
             let leader = ModelArray[this.modelIDs[0]];
-            leader.token.set({
-                aura1_color: colours.green,
-                aura1_radius: 2,
-                showplayers_aura1: true,
-            })
+            if (this.modelIDs.length > 1) {
+                leader.token.set("status_black-flag,true");
+            }
         }
 
         remove(model) {
@@ -551,6 +556,28 @@ const CoC = (() => {
                 //Bad Thing
             }
         }
+
+        pinned() {
+            let pinned = false;
+            let leader = ModelArray[this.modelIDs[0]];
+            if (leader.token.get("tint_color") === Colours.red) {
+                pinned = true;
+            }
+            return pinned;
+        }
+
+        broken() {
+            let broken = false;
+            let leader = ModelArray[this.modelIDs[0]];
+            if (leader.token.get("tint_color") === Colours.black) {
+                broken = true;
+            }
+            return broken;
+        }
+
+
+
+
     }
 
     class Model {
@@ -690,21 +717,6 @@ const CoC = (() => {
             });
         }
 
-        pinned() {
-            let pinned = false;
-            if (this.token.get("aura1_color") === colours.yellow) {
-                pinned = true;
-            }
-            return pinned;
-        }
-
-        broken() {
-            let broken = false;
-            if (this.token.get("aura1_color") === colours.red) {
-                broken = true;
-            }
-            return broken;
-        }
 
 
 
@@ -1323,13 +1335,16 @@ const CoC = (() => {
             let teamName = info[3];
             let teamID = info[4];
             let team = TeamArray[teamID];
+            let sectionColour = token.get("aura1_color");
+            let leader = token.get("status_black-flag");
+
             if (!section) {
-                section = new Section(player,nation,sectionID,sectionName,core);
+                section = new Section(player,nation,sectionID,sectionName,core,sectionColour);
             }
             if (!team) {
                 team = new Team(player,nation,teamID,teamName,sectionID);
                 let markers = token.get("statusmarkers");
-                let teamMarker = Nations[nation].platoonmarkers.filter(value => Nations[nation].platoonmarkers.includes(value));
+                let teamMarker = Nations[nation].teammarkers.filter(value => Nations[nation].teammarkers.includes(value));
                 team.symbol = teamMarker;
                 section.add(team);
             }
@@ -1339,7 +1354,6 @@ const CoC = (() => {
                 PatrolArray.push(model.id);
             }
         });
-
 
         let elapsed = Date.now()-start;
         log(`${c} token${s} checked in ${elapsed/1000} seconds - ` + Object.keys(ModelArray).length + " placed in Model Array");
@@ -1693,7 +1707,7 @@ log("Other side of Partial LOS Blocking Terrain")
         }
     
         if (cover === 1) {
-            if (model2.type === "Infantry" && model2.token.get(sm.moved) === false) {
+            if (model2.type === "Infantry" && model2.token.get(SM.moved) === false) {
                 cover = 2;
             } else {
                 cover = 0;
@@ -1715,9 +1729,9 @@ log("Other side of Partial LOS Blocking Terrain")
         let hex = hexMap[model.hexLabel];
         let height = parseInt(hex.elevation);
         if (model.type === "Infantry" || model.type === "Gun") {
-            if (model.token.get(sm.floor2) === true) {
+            if (model.token.get(SM.floor2) === true) {
                 height += 10;
-            } else if (model.token.get(sm.floor3) === true) {
+            } else if (model.token.get(SM.floor3) === true) {
                 height += 20;
             }
         } else if (model.type === "Vehicle") {
@@ -1884,18 +1898,14 @@ log("Other side of Partial LOS Blocking Terrain")
         if (type === "Jump Off Point") {sectionName = "Jump Off Point"}
         let player = (Allies.includes(nation)) ? 0:1;
         let sectionID = stringGen();
-        let statusNum = parseInt(state.CoC.unitnumbers[player]);
-        if (type !== "Patrol" && type !== "Jump Off Point") {
-            statusNum += 1;
-        }
-        state.CoC.unitnumbers[player] = statusNum;
-        let statusmarkers = Nations[nation].platoonmarkers[statusNum];
+        let sectionColour = "";
+
         let side = (Allies.includes(nation)) ? 0:1;
         if (state.CoC.nations[side].includes(nation) === false) {
             state.CoC.nations[side].push(nation);
         }
 
-        section = new Section(player,nation,sectionID,sectionName,core);
+        section = new Section(player,nation,sectionID,sectionName,core,sectionColour);
         if (unitComp === "Patrol" || unitComp === "Jump Off Point") {
             let team = new Team(player,nation,stringGen(),sectionName,sectionID);
             for (let i=0;i<tokenIDs.length;i++) {
@@ -1914,26 +1924,24 @@ log("Other side of Partial LOS Blocking Terrain")
             }
             section.add(team);
         } else if (unitComp === "Sr. Leader") {
-            teamName = sectionName;
-            let team = new Team(player,nation,stringGen(),teamName,sectionID);
+            let team = new Team(player,nation,stringGen(),"",sectionID);
             let model = new Model(refToken.id,sectionID,team.id,false);
             team.add(model);
+            team.name = model.name;
             section.add(team);
-            let gmn = core + ";" + sectionName + ";" + sectionID + ";" + sectionName + ";" + team.id;
+            section.name = model.name;
+            let gmn = core + ";" + section.name + ";" + sectionID + ";" + section.name + ";" + team.id;
             model.token.set({
                 name: model.name,
                 tint_color: "transparent",
-                aura1_color: colours.green,
-                aura1_radius: 2,
                 showplayers_bar1: true,
                 showname: true,
-                showplayers_aura1: true,
+                showplayers_aura1: false,
                 bar1_value: model.initiative,
                 showplayers_bar3: true,
                 bar3_value: 0,
                 gmnotes: gmn,
             });
-            model.token.set("statusmarkers",statusmarkers);
         } else if (unitComp === "Team") {
             //solo Team, Tank etc
             teamName = sectionName;
@@ -1958,11 +1966,14 @@ log("Other side of Partial LOS Blocking Terrain")
                     bar3_value: 0,
                     gmnotes: gmn,
                 });
-                model.token.set("statusmarkers",statusmarkers);
             }
             team.leader();
             section.add(team);
         } else if (unitComp === "Section") {
+            let statusNum = parseInt(state.CoC.unitnumbers[player]);
+            let cKeys = Object.keys(Colours);
+            let sectionColour = Colours[[cKeys[statusNum]]];
+            state.CoC.unitnumbers[player] = statusNum + 1;
             let tokenInfo = {};
             for (let i=0;i<tokenIDs.length;i++) {
                 let id = tokenIDs[i];
@@ -1998,6 +2009,7 @@ log("Other side of Partial LOS Blocking Terrain")
 
             //now sort into "Teams" and Jr. Leaders
             for (let i=0;i<groups.length;i++) {
+                let statusmarkers = Nations[nation].teammarkers[i];
                 let group = groups[i];
                 let letters = ["A","B","C","D","E","F","G"];
                 let teamName = sectionName + "/" + letters[i];
@@ -2018,6 +2030,8 @@ log("Other side of Partial LOS Blocking Terrain")
                     model.token.set({
                         name: model.name,
                         tint_color: "transparent",
+                        aura1_color: sectionColour,
+                        aura1_radius: 2,
                         showplayers_bar1: true,
                         showname: true,
                         bar1_value: hp,
@@ -2406,11 +2420,11 @@ log(patrol.name + ": " + dist)
                     }
                     if (friendFlag === false) {
                         //sendChat("",'Too Far from Friendly Patrol');
-                        colour = colours.red;
+                        colour = Colours.red;
                     }
                     if (enemyFlag === true) {
                         //sendChat("","Will be Locked Down");
-                        colour = colours.black;
+                        colour = Colours.black;
                         for (let i=0;i<lockDowns.length;i++) {
                             let patrol = ModelArray[lockDowns[i]];
                             patrol.token.set("tint_color",colour);
@@ -2574,21 +2588,21 @@ log(patrol.name + ": " + dist)
         }
         let model = ModelArray[id];
         let quality = model.quality;
-        let teams = [];
         let team1 = TeamArray[model.teamID];
         let section = SectionArray[team1.sectionID];
-        teams.push(team1);
+        let teamIDs = DeepCopy(section.teamIDs);
         let team1Leader = ModelArray[team1.modelIDs[0]];
-        let tlc = team1Leader.token.get("aura1_color");
-        if (tlc === colours.black) {
+        if (team1.order !== "") {
             errorMsg = "Target has already been activated";
-        } else if (tlc === colours.red) {
+        }
+        if (team1.broken() === true) {
             errorMsg = "Target is Broken";
-        } else if (tlc === colours.yellow && moveAction === true) {
+        }
+        if (team1.pinned() === true && moveAction === true) {
             errorMsg = "Target is Pinned and Cannot Move";
         }
         let requires;
-        if (team1Leader.token.get(sm.order) === true) {
+        if (team1Leader.token.get(SM.order) === true) {
             requires = "Using Leader's Order";
         } else {
             requires = "Command Dice: "; 
@@ -2607,25 +2621,25 @@ log(section)
                 let team2 = TeamArray[section.teamIDs[i]];
                 if (team2.id === team1.id) {continue};
                 let team2Leader = ModelArray[team2.modelIDs[0]];
-                let t2lc = team2Leader.token.get('aura1_color');
-                if (t2lc === colours.black) {
-                    errorMsg = "Other Team has already been activated";
-                } else if (t2lc === colours.red) {
-                    errorMsg = "Other Team is Broken";
-                } else if (t2lc === colours.yellow && moveAction === true) {
-                    errorMsg = "Other Team is Pinned and Cannot Move";
+                if (team2.order !== "") {
+                    errorMsg = team2.name + " has already been activated";
+                }
+                if (team2.broken() === true) {
+                    errorMsg = team2.name + " is Broken";
+                }
+                if (team2.pinned() === true && moveAction === true) {
+                    errorMsg = team2.name + " is Pinned and Cannot Move";
                 }
                 if (TeamsInRange(team1,team2) === false) {
-                    errorMsg = 'Other Team is > 4"'
+                    errorMsg = team2.name + ' is > 4" away'
                 }
                 if (errorMsg !== "") {
-                    break;
+                    teamIDs = teamIDs.splice(i,1);
                 } 
-                teams.push(team2);
             }
         };
 
-        if ((order === "Overwatch" || order === "Covering Fire") && team1Leader.token.get(sm.order) === false) {
+        if ((order === "Overwatch" || order === "Covering Fire") && team1Leader.token.get(SM.order) === false) {
             errorMsg = "Needs an Order to perform this action";
         }
         if (errorMsg !== "") {
@@ -2647,7 +2661,7 @@ log(section)
         for (let i=0;i<3;i++) {
             moveDice.push(randomInteger(6));
         }
-        team1Leader.token.set(sm.order,false);
+        team1Leader.token.set(SM.order,false);
         switch (order) {
             case 'Tactical Move':
                 outputCard.body.push("Rolls: " + DisplayDice(moveDice[0],team1.nation,14));
@@ -2676,10 +2690,9 @@ log(section)
                     outputCard.body.push("No Senior Leader or Adjutant Offboard: " + DisplayDice(roll,team1.nation,14));
                     if (roll < 4) {
                         outputCard.body.push("The " + size + " failed to receive the Orders");     
-                        for (let i=0;i<teams.length;i++) {
-                            let team = teams[i];
-                            let tLeader = ModelArray[team.modelIDs[0]];
-                            tLeader.token.set("aura1_color",colours.black);
+                        for (let i=0;i<teamIDs.length;i++) {
+                            let team = TeamArray[teamIDs[i]];
+                            team.order = "Failed"
                         }
                         PrintCard();
                         return;
@@ -2703,11 +2716,11 @@ log(section)
                 break;
         }
 
-        teams.forEach((indTeam) => {
+        teamIDs.forEach((id) => {
+            let indTeam = TeamArray[id];
             let move;
             let teamLeader = ModelArray[indTeam.modelIDs[0]];
             indTeam.order = order;
-            teamLeader.token.set("aura1_color",colours.black);
             let shock = parseInt(teamLeader.token.get("bar3_value"));
             if (teamLeader.special.includes("Leader")) {
                 outputCard.body.push(teamLeader.name + " accompanies the Section but may not use his Command Initiative this Phase");
