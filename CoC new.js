@@ -2814,6 +2814,11 @@ log(patrol.name + ": " + dist)
         let id = msg.selected[0]._id;
         if (!id) {return};
         let token = findObjs({_type:"graphic", id: id})[0];
+        let model = ModelArray[token.id];
+        if (!model) {
+            sendChat("Add into Model Array First");
+            return;
+        }
         let char = getObj("character", token.get("represents"));
         let abilityName,action;
         let abilArray = findObjs({  _type: "ability", _characterid: char.id});
@@ -2821,25 +2826,27 @@ log(patrol.name + ": " + dist)
         for(let a=0;a<abilArray.length;a++) {
             abilArray[a].remove();
         } 
-        let type = Attribute(char,"type");
+        let type = model.type;
 
         if (type === "Infantry") {
-            let rank = Attribute(char,"rank");
-            let special = Attribute(char,"special");
+            let rank = model.rank;
+            let special = model.special;
+            let section = SectionArray[model.sectionID];
+            sectionFlag = true;
+            if (section.teamIDs.length === 1) {
+                sectionFlag = false;
+            }
             if (rank < 3) {
                 abilityName = "Activate" ;
-                if (special.includes("Section Only") === false) {
+                if (parseInt(model.token.get("bar1_value")) === 5) {
+                    action = "!Activate;@{selected|token_id};Team;?{Stand and Fire|Rotate|Normal Move|At the Double|Covering Fire|Deploy}";
+                } else if (sectionFlag === true) {
                     action = "!Activate;@{selected|token_id};?{Unit|Team|Section};?{Action|Stand and Fire|Tactical Move|Move and Fire|Normal Move|At the Double|Covering Fire|Deploy}";
-                    AddAbility(abilityName,action,char.id);
-                }
-                if (special.includes("Section Only") === true) {
-                    action = "!Activate;@{selected|token_id};Section;?{Action|Stand and Fire|Tactical Move|Move and Fire|Normal Move|At the Double|Covering Fire|Deploy}";
-                    AddAbility(abilityName,action,char.id);
-                } 
-                if (special.includes("Fire Team") === true) {
+                } else if (sectionFlag === false) {
                     action = "!Activate;@{selected|token_id};Team;?{Action|Stand and Fire|Tactical Move|Move and Fire|Normal Move|At the Double|Covering Fire|Deploy}";
-                    AddAbility(abilityName,action,char.id);
                 } 
+                AddAbility(abilityName,action,char.id);
+
                 abilityName = "Overwatch";
                 action = "!Activate;@{selected|token_id};Team;Overwatch";
                 AddAbility(abilityName,action,char.id);
@@ -2851,7 +2858,6 @@ log(patrol.name + ": " + dist)
                 abilityName = "Fire";
                 action = "!Fire;@{selected|token_id};@{target|token_id}";
                 AddAbility(abilityName,action,char.id);
-
 
             } else {
                 //Leader
