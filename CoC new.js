@@ -2648,15 +2648,15 @@ log(section)
             return;
         }
 
+        let weaponMoveMod = 0;
 
-        if (size === "Team" && teamLeader.special.includes("Fire Team")) {
-            //check if is a 3 man crew weapon eg MMG/HMG and has < 3 crew
-            //2 men = -1 on each dice => weaponMoveMod = 1
-            // 1 man = can only rotate - change action to "Rotate"
+        if (size === "Team" && team1.type === "Infantry" && team1Leader.special.includes("Crew of 5")) {
+            let crew = parseInt(team1Leader.token.get("bar1_value"));
+            if (crew === 2) {weaponMoveMod = 1};
+            if (crew === 1) {order = "Rotate"};
+
         }
 
-
-        let weaponMoveMod = 0;
         let moveDice = [];
         for (let i=0;i<3;i++) {
             moveDice.push(randomInteger(6));
@@ -2726,6 +2726,7 @@ log(section)
             if (teamLeader.special.includes("Leader")) {
                 leaderFlag = true;
                 outputCard.body.push(teamLeader.name + " accompanies the Section but may not use his Command Initiative this Phase");
+                
             }
             switch (order) {
                 case 'Stand and Fire':
@@ -2760,10 +2761,12 @@ log(section)
                     break;
                 case 'At the Double':
                     move = Math.max(0,moveDice[0] + moveDice[1] + moveDice[2] - shock  - (3*weaponMoveMod)) + '"'; 
-                    outputCard.body.push("[#ff0000]" + indTeam.name + " can move " + move + "[/#]");
-                    if (leaderFlag === false) {
+                    if (leaderFlag === true) {
+                        move = Math.max(0,moveDice[0] + moveDice[1] - shock  - (2*weaponMoveMod)) + '" (wounded)'; 
+                    } else {
                         teamLeader.token.set("bar3_value",(shock+1));
                     }
+                    outputCard.body.push("[#ff0000]" + indTeam.name + " can move " + move + "[/#]");
                     break;
             }
         });
