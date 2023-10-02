@@ -2654,11 +2654,10 @@ log(patrol.name + ": " + dist)
 
         let weaponMoveMod = 0;
 
-        if (size === "Team" && team1.type === "Infantry" && team1Leader.special.includes("Crew of 5")) {
+        if (team1Leader.type === "Infantry" && team1Leader.special.includes("Crew of 5")) {
             let crew = parseInt(team1Leader.token.get("bar1_value"));
             if (crew === 2) {weaponMoveMod = 1};
             if (crew === 1) {order = "Rotate"};
-
         }
 
         let moveDice = [];
