@@ -12,6 +12,8 @@ const CoC = (() => {
     let PatrolArray = []; //ids of patrol models
     let CommandDiceArray = [];
     let InfoPoints = [[],[]];
+    let CoveringFireArray = [];
+
 
     let hexMap = {}; 
     let edgeArray = [];
@@ -526,7 +528,7 @@ const CoC = (() => {
             this.modelIDs = [];
             this.symbol = "";
             this.order = "";
-
+            this.markerID = ""; //tactical, overwatch or covering markers
             TeamArray[teamID] = this;
         }
 
@@ -1323,6 +1325,17 @@ const CoC = (() => {
         tokens.forEach((token) => {
             let character = getObj("character", token.get("represents"));           
             if (character === null || character === undefined) {return};
+            if (character.id === "-N_aLD7-Jrij3WlVHaUl") {
+                CoveringFireArray.push(token.id);
+                return;
+            }
+            if (character.id === "-N_aLRXvf68lFjYj5V3V") {
+                //overwatch marker
+                return;
+            }
+
+
+
             let nation = Attribute(character,"nation");
             let info = decodeURIComponent(token.get("gmnotes")).toString();
             if (!info) {return};
@@ -2648,11 +2661,18 @@ log(patrol.name + ": " + dist)
                     teamIDs = teamIDs.splice(i,1);
                 } 
             }
-        };
+        } else if (size === "Team") {
+            teamIDs = team1.id;
+        }
 
         if ((order === "Overwatch" || order === "Covering Fire") && team1Leader.token.get(SM.order) === false) {
             errorMsg = "Needs an Order to perform this action";
         }
+        if ((order === "Overwatch" || order === "Covering Fire") && size === "Section") {
+            errorMsg = "Team Order only (not Section)";
+        }
+
+
         if (errorMsg !== "") {
             outputCard.body.push(errorMsg);
             PrintCard();
@@ -2717,12 +2737,12 @@ log(patrol.name + ": " + dist)
                 outputCard.body.push("They may not move, but may fire at full effect");
                 break;
             case 'Overwatch':
-                //PlaceMarker("overwatch",teamLeader);
+                PlaceMarker("overwatch",team1);
                 outputCard.body.push("Place Overwatch Marker and rotate to desired position, then Activate it");
                 break;
             case 'Covering Fire':
-                //PlaceMarker("covering",teamLeader,size);
-                outputCard.body.push("Place Covering Fire in desired area, then Activate it");
+                PlaceMarker("covering",team1);
+                outputCard.body.push("Place Covering Fire in desired area (in LOS), then Activate it");
                 break;
         }
 
@@ -2933,6 +2953,93 @@ log(patrol.name + ": " + dist)
         return inRange;
     }
 
+    const PlaceMarker = (type,team) => {
+        let img,w,h,charID;
+        let teamLeader = ModelArray[team.modelIDs[0]];
+        if (type === "overwatch")  {
+            img = getCleanImgSrc("https://s3.amazonaws.com/files.d20.io/images/350758041/b68-lK7VEeV5kUXd8OgekA/thumb.png?1689607404");
+            w = 140;
+            h = 70;
+            charID = "-N_aLRXvf68lFjYj5V3V";
+        } else if (type === "covering") {
+            img = getCleanImgSrc("https://s3.amazonaws.com/files.d20.io/images/350758027/C1hQ7gQRBQpTshndyQ-XCw/thumb.png?1689607395");
+            w = 280;
+            h = 140;
+            charID = "-N_aLD7-Jrij3WlVHaUl";
+        }
+//Tactical
+
+
+        let location = hexMap[teamLeader.hexLabel].centre
+        let newToken = createObj("graphic", {   
+            left: teamLeader.location.x,
+            top: location.y,
+            width: w, 
+            height: h,  
+            name: type,
+            pageid: Campaign().get("playerpageid"),
+            represents: charID,
+            gmnotes: team.id,
+            imgsrc: img,
+            layer: "objects",
+        });
+        toFront(newToken);
+        team.markerID = newToken.id;
+        if (type === "covering") {
+            CoveringFireArray.push(newToken.id);
+        }
+    }
+
+    const FinalizeMarker = (msg) => {
+        let Tag = msg.content.split(";");
+        let markerID = Tag[1];
+        let marker = findObjs({_type:"graphic", id: markerID})[0];
+        let teamID = decodeURIComponent(marker.get("gmnotes")).toString();;
+        let team = TeamArray[teamID];
+        //Covering should be in LOS of one of team, move it to map layer
+        if (marker.name === "overwatch") {
+            SetupCard("Overwatch","",team.nation);
+            let rotation = Angle(marker.get("rotation"));
+            let hex = ModelArray[team.modelIDs[0]].hex;
+            let pos = Math.floor(rotation/60);
+            pos = Math.max(0,Math.min(pos,6));
+            let dirs = ["Northeast","East","Southeast","Southwest","West","Northwest"];
+            hex = hex.neighbour(dirs[pos]);          
+            let location = hexMap[hex.label()].centre;
+
+            marker.token.set({
+                left: location.x,
+                top: location.y,
+                layer: "map",
+            });
+            for (let i=0;i<team.modelIDs.length;i++) {
+                let model = ModelArray[team.modelIDs[i]];
+                model.token.set("rotation",rotation);   
+            }
+            outputCard.body.push(team.name + " set on Overwatch");
+        } else if (marker.name === "covering") {
+            SetupCard("Covering Fire","",team.nation);
+            let losCheck = false;
+            for (let i=0;i<team.modelIDs.length;i++) {
+                let losResult = LOS(team.modelIDs[i],markerID);
+                if (losResult.los === true) {
+                    losCheck = true;
+                    break;
+                }
+            }
+            if (losCheck === false) {
+                outputCard.body.push("Team doesn't have LOS to the area selected");
+                PrintCard();
+                return;
+            }
+            marker.token.set("layer","map");
+            outputCard.body.push(team.name + " lays down Covering Fire");
+        }
+        PrintCard();
+    }
+
+
+
 
 
 /*
@@ -3013,6 +3120,9 @@ log(patrol.name + ": " + dist)
                 break;
             case '!AddAbilities':
                 AddAbilities(msg);
+                break;
+            case '!FinalizeMarker':
+                FinalizeMarker(msg);
                 break;
         }
     };
