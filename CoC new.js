@@ -12,8 +12,6 @@ const CoC = (() => {
     let PatrolArray = []; //ids of patrol models
     let CommandDiceArray = [];
     let InfoPoints = [[],[]];
-    let CoveringFireArray = [];
-
 
     let hexMap = {}; 
     let edgeArray = [];
