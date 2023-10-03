@@ -2935,7 +2935,7 @@ log(patrol.name + ": " + dist)
             case 'Deploy':
                 let roll = randomInteger(6);
                 let keys = Object.keys(ModelArray);
-                if (leaderTeam.special.includes("Junior Leader")) {
+                if (leader.special.includes("Junior Leader")) {
                     let leaderOffboard = false;
                     for (let i=0;i<keys.length;i++) {
                         let model2 = ModelArray[keys[i]];
@@ -2963,7 +2963,13 @@ log(patrol.name + ": " + dist)
                 if (quality === "Elite") {radius = 9};
 
                 outputCard.body.push(leader.name + " can deploy within " + radius + '"' + " of a Jump Off Point");
-                outputCard.body.push("He may not move, but may issue Orders");
+                if (leader.special.includes("Junior Leader")) {
+                    outputCard.body.push("His section or team may deploy with him");
+                    outputCard.body.push("Troops deployed may not move but may fire");
+                    outputCard.body.push(leader.name + " may issue Orders");
+                } else {
+                    outputCard.body.push("He may not move, but may issue Orders");
+                }
                 break;
         }
         PrintCard();
