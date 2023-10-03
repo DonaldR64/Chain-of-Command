@@ -2781,7 +2781,7 @@ log(patrol.name + ": " + dist)
                         outputCard.body.push("The " + size + " failed to receive the Orders");     
                         for (let i=0;i<teamIDs.length;i++) {
                             let team = TeamArray[teamIDs[i]];
-                            team.order = "Failed"
+                            team.order = "Failed to Deploy"
                         }
                         PrintCard();
                         return;
@@ -2885,6 +2885,93 @@ log(patrol.name + ": " + dist)
         }
         PrintCard();
     }
+
+
+    const LeaderSelf = (msg) => {
+        //!LeaderSelf;@{selected|token_id};?{Tactical Move|Normal Move|At the Double|Deploy};
+        let Tag = msg.content.split(";");
+        let leaderID = Tag[1];
+        let choice = Tag[2];
+        let leader = ModelArray[leaderID];
+        let d;
+        if (leader.special.includes("Senior Leader")) {
+            d = 4;
+        } else if (leader.special.includes("Senior Leader")) {
+            d = 3;
+        }
+        SetupCard(leader.name,"Command Dice: " + d,leader.nation);
+
+
+        let moveDice = [];
+        for (let i=0;i<3;i++) {
+            moveDice.push(randomInteger(6));
+        }
+        switch (choice) {
+            case 'Tactical Move':
+                outputCard.body.push("Rolls: " + DisplayDice(moveDice[0],leader.nation,14));
+                outputCard.body.push(leader.name + " can move " + moveDice[0] + '"');
+                outputCard.body.push('-1" for Heavy Going');
+                outputCard.body.push("No Crossing Obstacles");
+                break;
+            case 'Normal Move':
+                outputCard.body.push("Rolls: " + DisplayDice(moveDice[0],leader.nation,14) + " / " + DisplayDice(moveDice[1],leader.nation,14));
+                outputCard.body.push(leader.name + " can move " + move);
+                outputCard.body.push('Low Obstacle/Building: ' + move2);
+                outputCard.body.push('Medium Obstacle: ' + move3);
+                outputCard.body.push('-2" for Heavy Going');
+                break;
+            case 'At the Double':
+                let out;
+                if (parseInt(leader.token.get("bar1_value")) < parseInt(leader.token.get("bar1_max"))) {
+                    outputCard.body.push("Rolls: " + DisplayDice(moveDice[0],leader.nation,14) + " / " + DisplayDice(moveDice[1],leader.nation,14));
+                    out = leader.name + " can move " + moveDice[0] + moveDice[1] + '" (wounded)';
+                } else {
+                    outputCard.body.push("Rolls: " + DisplayDice(moveDice[0],leader.nation,14) + " / " + DisplayDice(moveDice[1],leader.nation,14) + " / " + DisplayDice(moveDice[2],leader.nation,14));
+                    out = leader.name + " can move " + moveDice[0] + moveDice[1] + moveDice[2] + '"'
+                }
+                outputCard.body.push(out);
+                outputCard.body.push("Cannot Move in Broken or Heavy Ground");
+                break;
+            case 'Deploy':
+                let roll = randomInteger(6);
+                let keys = Object.keys(ModelArray);
+                if (leaderTeam.special.includes("Junior Leader")) {
+                    let leaderOffboard = false;
+                    for (let i=0;i<keys.length;i++) {
+                        let model2 = ModelArray[keys[i]];
+                        if ((model2.special.includes("Senior Leader") || model2.special.includes("Adjutant")) && model2.player === leader.player && hexMap[model2.hexLabel].terrain.includes("Offboard")) {
+                            leaderOffboard = true;
+                            break;
+                        };
+                    }
+                    if (leaderOffboard === false) {
+                        outputCard.body.push("No Senior Leader or Adjutant Offboard: " + DisplayDice(roll,team1.nation,14));
+                        if (roll < 4) {
+                            outputCard.body.push(leader.name + " failed to receive the Orders");     
+                            for (let i=0;i<teamIDs.length;i++) {
+                                let team = TeamArray[teamIDs[i]];
+                                team.order = "Failed to Deploy"
+                            }
+                            PrintCard();
+                            return;
+                        }
+                    }
+                }
+                let radius;
+                if (quality === "Green") {radius = 4};
+                if (quality === "Regular") {radius = 6};
+                if (quality === "Elite") {radius = 9};
+
+                outputCard.body.push(leader.name + " can deploy within " + radius + '"' + " of a Jump Off Point");
+                outputCard.body.push("He may not move, but may issue Orders");
+                break;
+        }
+        PrintCard();
+    }
+
+
+
+
 
     const AddAbility = (abilityName,action,charID) => {
         createObj("ability", {
