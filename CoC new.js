@@ -2839,7 +2839,7 @@ log(patrol.name + ": " + dist)
         let token = findObjs({_type:"graphic", id: id})[0];
         let model = ModelArray[token.id];
         if (!model) {
-            sendChat("Add into Model Array First");
+            sendChat("","Add into Model Array First");
             return;
         }
         let char = getObj("character", token.get("represents"));
@@ -2861,7 +2861,7 @@ log(rank)
             if (section.teamIDs.length === 1) {
                 sectionFlag = false;
             }
-            if (rank < 3) {
+            if (rank < 2) {
                 abilityName = "Activate" ;
                 if (parseInt(model.token.get("bar1_value")) === 5) {
                     action = "!Activate;@{selected|token_id};Team;?{Stand and Fire|Rotate|Normal Move|At the Double|Covering Fire|Deploy}";
