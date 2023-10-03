@@ -648,6 +648,7 @@ const CoC = (() => {
             this.nation = nation;
             this.teamID = teamID;
             this.sectionID = sectionID;
+            this.placingTeamID = "";//used by markers
             this.type = type;
             this.hex = hex;
             this.hexLabel = hexLabel;
@@ -1325,17 +1326,6 @@ const CoC = (() => {
         tokens.forEach((token) => {
             let character = getObj("character", token.get("represents"));           
             if (character === null || character === undefined) {return};
-            if (character.id === "-N_aLD7-Jrij3WlVHaUl") {
-                CoveringFireArray.push(token.id);
-                return;
-            }
-            if (character.id === "-N_aLRXvf68lFjYj5V3V") {
-                //overwatch marker
-                return;
-            }
-
-
-
             let nation = Attribute(character,"nation");
             let info = decodeURIComponent(token.get("gmnotes")).toString();
             if (!info) {return};
@@ -1486,7 +1476,7 @@ const CoC = (() => {
 
 
     const LOS = (id1,id2,special) => {
-        if (!special) {special = ""}; //used to track certian things eg. Flamethrowers
+        if (!special) {special = ""}; //used to track certain things eg. Flamethrowers
         let model1 = ModelArray[id1];
         let model2 = ModelArray[id2];       
 
@@ -1837,7 +1827,8 @@ log("Other side of Partial LOS Blocking Terrain")
             _type: "graphic",
             _subtype: "token",
             layer: "objects",
-        })
+        });
+        let removalNames = ["CoC Dice","Command Dice","covering","tactical","overwatch"]
         tokens.forEach((token) => {
             if (token.get("name").includes("Jump Off Point") === true) {return};
             if (token.get("name") === "CoC Dice" || token.get("name") === "Command Dice") {
@@ -2052,11 +2043,16 @@ log("Other side of Partial LOS Blocking Terrain")
                     if (hp > 1) {
                         model.token.set("bar1_max",hp);
                     }
+                    let ar = 2;
+                    if (model.size === "Large") {
+                        ar = 6;
+                    };
+
                     model.token.set({
                         name: model.name,
                         tint_color: "transparent",
                         aura1_color: sectionColour,
-                        aura1_radius: 2,
+                        aura1_radius: ar,
                         showplayers_bar1: true,
                         showname: true,
                         bar1_value: hp,
@@ -2662,7 +2658,7 @@ log(patrol.name + ": " + dist)
                 } 
             }
         } else if (size === "Team") {
-            teamIDs = team1.id;
+            teamIDs = [team1.id];
         }
 
         if ((order === "Overwatch" || order === "Covering Fire") && team1Leader.token.get(SM.order) === false) {
@@ -2963,50 +2959,61 @@ log(patrol.name + ": " + dist)
             charID = "-N_aLRXvf68lFjYj5V3V";
         } else if (type === "covering") {
             img = getCleanImgSrc("https://s3.amazonaws.com/files.d20.io/images/350758027/C1hQ7gQRBQpTshndyQ-XCw/thumb.png?1689607395");
-            w = 280;
-            h = 140;
+            w = 300;
+            h = 150;
             charID = "-N_aLD7-Jrij3WlVHaUl";
+        } else if (type === "tactical") {
+            img = getCleanImgSrc("");
+            w = 140;
+            h = 70;
+            charID = "";
         }
-//Tactical
-
+        let sectionID = "000000";
+        let teamID = stringGen();
+        let markerSection = SectionArray[sectionID];
+        if (!markerSection) {
+            markerSection = new Section(teamLeader.player,teamLeader.nation,sectionID,"Markers",false,"");
+        }
+        let markerTeam = new Team(teamLeader.player,teamLeader.nation,teamID,"Markers",sectionID);
+        markerSection.add(markerTeam);
+        let gmn = false + ";Markers;" + sectionID + ";Markers;" + team.id;
 
         let location = hexMap[teamLeader.hexLabel].centre
         let newToken = createObj("graphic", {   
-            left: teamLeader.location.x,
+            left: location.x,
             top: location.y,
             width: w, 
             height: h,  
             name: type,
             pageid: Campaign().get("playerpageid"),
             represents: charID,
-            gmnotes: team.id,
             imgsrc: img,
+            gmnotes: gmn,
             layer: "objects",
         });
         toFront(newToken);
         team.markerID = newToken.id;
-        if (type === "covering") {
-            CoveringFireArray.push(newToken.id);
-        }
+        let marker = new Model(newToken.id,sectionID,teamID,true);
+        marker.placingTeamID = team.id
+        markerTeam.add(marker);
     }
 
     const FinalizeMarker = (msg) => {
         let Tag = msg.content.split(";");
         let markerID = Tag[1];
-        let marker = findObjs({_type:"graphic", id: markerID})[0];
-        let teamID = decodeURIComponent(marker.get("gmnotes")).toString();;
-        let team = TeamArray[teamID];
+        let marker = ModelArray[markerID];
+        let teamID = marker.placingTeamID;
+        let team = TeamArray[teamID]; //shooting team
         //Covering should be in LOS of one of team, move it to map layer
         if (marker.name === "overwatch") {
             SetupCard("Overwatch","",team.nation);
-            let rotation = Angle(marker.get("rotation"));
+            let rotation = Angle(marker.token.get("rotation"));
             let hex = ModelArray[team.modelIDs[0]].hex;
             let pos = Math.floor(rotation/60);
             pos = Math.max(0,Math.min(pos,6));
             let dirs = ["Northeast","East","Southeast","Southwest","West","Northwest"];
             hex = hex.neighbour(dirs[pos]);          
             let location = hexMap[hex.label()].centre;
-
             marker.token.set({
                 left: location.x,
                 top: location.y,
@@ -3022,6 +3029,7 @@ log(patrol.name + ": " + dist)
             let losCheck = false;
             for (let i=0;i<team.modelIDs.length;i++) {
                 let losResult = LOS(team.modelIDs[i],markerID);
+log(losResult)
                 if (losResult.los === true) {
                     losCheck = true;
                     break;
