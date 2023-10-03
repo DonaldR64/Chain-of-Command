@@ -2862,7 +2862,7 @@ log(rank)
             if (rank < 2) {
                 abilityName = "Activate" ;
                 if (parseInt(model.token.get("bar1_value")) === 5) {
-                    action = "!Activate;@{selected|token_id};Team;?{Stand and Fire|Rotate|Normal Move|At the Double|Covering Fire|Deploy}";
+                    action = "!Activate;@{selected|token_id};Team;?{Stand and Fire|Rotate|Normal Move|At the Double|Deploy}";
                 } else if (sectionFlag === true) {
                     action = "!Activate;@{selected|token_id};?{Unit|Team|Section};?{Action|Stand and Fire|Tactical Move|Move and Fire|Normal Move|At the Double|Deploy}";
                 } else if (sectionFlag === false) {
@@ -2870,12 +2870,8 @@ log(rank)
                 } 
                 AddAbility(abilityName,action,char.id);
 
-                abilityName = "Orders";
-                action = "!Activate;@{selected|token_id};Team;?{Action|Covering Fire|Overwatch}";
-                AddAbility(abilityName,action,char.id);
-
-                abilityName = "Rejoin";
-                action = "!Rejoin;@{selected|token_id}";
+                abilityName = "Special";
+                action = "!Activate;@{selected|token_id};Team;?{Action|Covering Fire|Overwatch|Rejoin}";
                 AddAbility(abilityName,action,char.id);
 
                 abilityName = "Fire";
