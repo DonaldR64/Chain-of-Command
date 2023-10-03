@@ -2893,14 +2893,15 @@ log(patrol.name + ": " + dist)
         let leaderID = Tag[1];
         let choice = Tag[2];
         let leader = ModelArray[leaderID];
+        let quality = leader.quality;
         let d;
         if (leader.special.includes("Senior Leader")) {
             d = 4;
-        } else if (leader.special.includes("Senior Leader")) {
+        } else if (leader.special.includes("Junior Leader")) {
             d = 3;
         }
         SetupCard(leader.name,"Command Dice: " + d,leader.nation);
-
+        TeamArray[leader.teamID].order = choice;
 
         let moveDice = [];
         for (let i=0;i<3;i++) {
@@ -2915,6 +2916,9 @@ log(patrol.name + ": " + dist)
                 break;
             case 'Normal Move':
                 outputCard.body.push("Rolls: " + DisplayDice(moveDice[0],leader.nation,14) + " / " + DisplayDice(moveDice[1],leader.nation,14));
+                move = Math.max(0,moveDice[0] + moveDice[1])  + '"';
+                move2 = Math.max(0,Math.max(moveDice[0],moveDice[1])) + '"';
+                move3 = Math.max(0,Math.min(moveDice[0],moveDice[1])) + '"';
                 outputCard.body.push(leader.name + " can move " + move);
                 outputCard.body.push('Low Obstacle/Building: ' + move2);
                 outputCard.body.push('Medium Obstacle: ' + move3);
@@ -2927,7 +2931,8 @@ log(patrol.name + ": " + dist)
                     out = leader.name + " can move " + moveDice[0] + moveDice[1] + '" (wounded)';
                 } else {
                     outputCard.body.push("Rolls: " + DisplayDice(moveDice[0],leader.nation,14) + " / " + DisplayDice(moveDice[1],leader.nation,14) + " / " + DisplayDice(moveDice[2],leader.nation,14));
-                    out = leader.name + " can move " + moveDice[0] + moveDice[1] + moveDice[2] + '"'
+                    let move = parseInt(moveDice[0]) + parseInt(moveDice[1]) + parseInt(moveDice[2]);
+                    out = leader.name + " can move " + move + '"'
                 }
                 outputCard.body.push(out);
                 outputCard.body.push("Cannot Move in Broken or Heavy Ground");
@@ -3038,15 +3043,13 @@ log(rank)
 
             } else {
                 //Leader
-                abilityName = "Order Unit";
+                abilityName = "Issue Order";
                 action = "!Order;@{selected|token_id};?{Order|Activate|Overwatch|Covering Fire|Rally|Throw/Fire Grenade|Smoke Grenades|Fire Squad AT Weapon|Transfer Man to Team|Detach Team};@{target|token_id}";
                 AddAbility(abilityName,action,char.id);
-                abilityName = "Move";
+                abilityName = "Move/Deploy";
                 action = "!LeaderSelf;@{selected|token_id};?{Tactical Move|Normal Move|At the Double|Deploy}";
                 AddAbility(abilityName,action,char.id);
-                abilityName = "Join Team";
-                action = "!LeaderJoin;@{selected|token_id};@{target|token_id}";
-                AddAbility(abilityName,action,char.id);
+
 
 
 
@@ -3281,6 +3284,9 @@ log(rank)
                 break;
             case '!FinalizeMarker':
                 FinalizeMarker(msg);
+                break;
+            case '!LeaderSelf':
+                LeaderSelf(msg);
                 break;
         }
     };
