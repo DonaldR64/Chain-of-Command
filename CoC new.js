@@ -2760,6 +2760,7 @@ log(patrol.name + ": " + dist)
                     outputCard.body.push("[#ff0000]" + itName + " fires at full effect[/#]");
                     break;
                 case 'Tactical Move':
+                    teamLeader.token.set(SM.tactical,true);
                     move = Math.max(0,moveDice[0] - shock) + '"';
                     outputCard.body.push("[#ff0000]" + itName + " can move " + move + "[/#]");
                     break;
@@ -2851,7 +2852,9 @@ log(patrol.name + ": " + dist)
         let type = model.type;
 
         if (type === "Infantry") {
-            let rank = model.rank;
+            let rank = parseInt(model.rank);
+log(model.name)
+log(rank)
             let special = model.special;
             let section = SectionArray[model.sectionID];
             sectionFlag = true;
@@ -2962,11 +2965,6 @@ log(patrol.name + ": " + dist)
             w = 300;
             h = 150;
             charID = "-N_aLD7-Jrij3WlVHaUl";
-        } else if (type === "tactical") {
-            img = getCleanImgSrc("");
-            w = 140;
-            h = 70;
-            charID = "";
         }
         let sectionID = "000000";
         let teamID = stringGen();
@@ -3042,7 +3040,7 @@ log(losResult)
             }
             marker.token.set("layer","map");
             outputCard.body.push(team.name + " lays down Covering Fire");
-        }
+        } 
         PrintCard();
     }
 
