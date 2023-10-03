@@ -2981,6 +2981,161 @@ log(patrol.name + ": " + dist)
     }
 
 
+    const Order = (msg) => {
+        //!Order;@{selected|token_id};?{Order|Activate|Overwatch|Covering Fire|Rally|Throw/Fire Grenade|Smoke Grenades|Fire Squad AT Weapon|Transfer Man to Team};@{target|token_id}
+        let Tag = msg.content.split(";");
+        let leaderID = Tag[1];
+        let order = Tag[2];
+        let targetID = Tag[3];
+        let leader = BaseArray[leaderID];
+        SetupCard(leader.name,order,leader.nation);
+        let errorMsg = "";
+        if (leader.command >= leader.initiative) {
+            errorMsg = "Unable to give any more orders this Phase";
+        }
+        let target = BaseArray[targetID];
+        let targetTeam = TeamArray[target.teamID];
+        let targetUnit = UnitArray[targetTeam.unitID];
+        if (targetUnit.teams.length < 2 && (order === "Transfer Man to Team" || order === "Detach Team")) {
+            errorMsg = "Only the one Team";
+        }
+        inCommandRange = false;
+        withTeam = (targetTeam.nco === leaderID || targetTeam.co === leaderID) ? true:false;
+        for (let i=0;i<targetTeam.bases.length;i++) {
+            let t2 = BaseArray[targetTeam.bases[i]]
+            let dist = leader.hex.distance(t2.hex);
+            if (dist <= (3 * leader.initiative)) {
+                inCommandRange = true;
+                break;
+            }
+        }
+        if (inCommandRange === false) {
+            errorMsg = "Target is too far to Command/Rally";
+        }
+
+        //change target to be the first base of team
+        targetLeaderID = targetTeam.bases[0];
+        targetLeader = BaseArray[targetLeaderID];
+
+        if (order === "Rally" && withTeam === false && inCommandRange === true) {
+            //check if enemy in LOS
+            for (let i=0;i<targetTeam.bases.length;i++) {
+                if (errorMsg !== "") {continue};
+                let friendlyTeam = targetTeam.bases[i];
+                let keys = Object.keys(BaseArray);
+                for (let j=0;j<keys.length;j++) {
+                    let enemyTeam = BaseArray[keys[j]];
+                    if (enemyTeam.player === leaderTeam.player) {continue};
+                    let losResult = LOS(friendlyTeam.id,enemyTeam.id);
+                    if (losResult.los === true) {
+                        errorMsg = "Can't Rally due to Enemy in LOS";
+                        break;
+                    }
+                }
+            }
+        }
+        if (targetTeam.pinned === true && (order === "Covering Fire" || order === "Throw/Fire Grenade" || order === "Fire Squad AT Weapon" )) {
+            errorMsg = "Pinned Unit cannot follow that order";
+        }
+        if (targetLeader.token.get("aura1_color") === colours.black && (order === "Activate" || order === "Overwatch" || order === "Covering Fire")) {
+            errorMsg = "Target has already been activated";
+        }
+        if (target.broken() === true && order !== "Rally") {
+            errorMsg = "Target is Broken";
+        }
+        if (order.includes("Grenade") || order.includes("AT Weapon")) {
+            if (targetTeam.order === "Overwatch" || targetTeam.order === "Tactical") {
+                errorMsg = "Teams on Overwatch or Tactical can't throw Grenades or fire Section AT Weapons";
+            }
+        }
+
+        if (errorMsg !== "") {
+            outputCard.body.push(errorMsg);
+        } else {
+            leader.command += 1;
+            if (order === "Rally") {
+                outputCard.body.push("1 point of Shock rallied");
+                let shock = parseInt(targetLeader.token.get("bar3_value"));
+                shock -= 1;
+                targetLeader.token.set("bar3_value",shock);
+                if (shock === 0) {
+                    targetLeader.token.set("status_red",false);
+                }
+            } else if (order === "Transfer Man to Team") {
+                let donatingTeam,donatingBase;
+                for (let t=0;t<targetUnit.teams.length;t++) {
+                    let tid = targetUnit.teams[t];
+                    if (tid === target.teamID) {continue};
+                    if (TeamArray[tid].leader === true) {continue};
+                    donatingTeam = TeamArray[tid];
+                }
+                if (!donatingTeam) {
+                    outputCard.body.push("Error with other team");
+                    PrintCard();
+                    return;
+                }
+                let lastBaseNum = donatingTeam.bases.length - 1;
+                donatingBase = BaseArray[donatingTeam.bases[lastBaseNum]];              
+
+                let tH = parseInt(target.token.get("bar1_value")) + 1;
+                let tsides = target.token.get("sides").split("|");
+                let currentSideMax = tsides.length;
+
+                if (tH > currentSideMax) {
+                    outputCard.body.push("Target is at Max # of Men");
+                    PrintCard();
+                    return;
+                } else {
+                    outputCard.body.push("Man Transferred");
+                }
+                let tside = tH - 1;
+                let timg = tokenImage(tsides[tside]);
+                target.token.set({
+                    bar1_value: tH,
+                    currentSide: tside, //zero indexed
+                    imgsrc: timg,
+                })
+                let dbH = parseInt(donatingBase.token.get("bar1_value")) - 1;
+                if (dbH === 0) {
+                    donatingBase.remove();
+                } else {
+                    let dsides = donatingBase.token.get("sides").split("|");
+                    let dside = dbH - 1;
+                    let dimg = tokenImage(dsides[dside]);
+                    donatingBase.token.set({
+                        bar1_value: dbH,
+                        currentSide: dside, //zero indexed
+                        imgsrc: dimg,
+                    });
+                }
+            } else if (order === "Detach Team") {
+                //detach target to be a new scout team
+                let newTeam = new Team("Scouts",target.player,target.nation,targetUnit.id);
+                newTeam.add(target);   
+                newTeam.scout = true;
+                newTeam.parentTeamID = targetTeam.id;
+                target.teamID = newTeam.id;
+                let gmnotes = target.token.get("gmnotes").split(";");
+                gmnotes[0] = "Scouts";
+                gmnotes[1] = newTeam.id;
+                gmnotes = gmnotes[0] + ";" + gmnotes[1] + ";" + gmnotes[2] + ";" + gmnotes[3] + ";" + gmnotes[4] + ";" + targetTeam.id;
+                target.token.set("gmnotes",gmnotes);
+                targetTeam.remove(target);
+                targetUnit.add(newTeam);
+                let colour = BaseArray[targetTeam.bases[0]].token.get("aura1_color");
+                target.token.set("aura1_color",colour);
+                outputCard.body.push("Scout Team Created and can operate independently");
+            } else {
+                outputCard.body.push("Unit can execute the " + order + " Order");
+                //place status marker on team leader so that can use order
+                targetLeader.token.set(sm.order,true);
+            }
+        }
+        PrintCard();
+    }
+
+
+
 
 
 
@@ -3013,16 +3168,13 @@ log(patrol.name + ": " + dist)
         let type = model.type;
 
         if (type === "Infantry") {
-            let rank = parseInt(model.rank);
-log(model.name)
-log(rank)
             let special = model.special;
             let section = SectionArray[model.sectionID];
             sectionFlag = true;
             if (section.teamIDs.length === 1) {
                 sectionFlag = false;
             }
-            if (rank < 2) {
+            if (special.includes("Leader") === false) {
                 abilityName = "Activate" ;
                 if (parseInt(model.token.get("bar1_value")) === 5) {
                     action = "!Activate;@{selected|token_id};Team;?{Stand and Fire|Rotate|Normal Move|At the Double|Deploy}";
