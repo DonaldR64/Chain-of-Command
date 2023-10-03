@@ -2864,14 +2864,14 @@ log(rank)
                 if (parseInt(model.token.get("bar1_value")) === 5) {
                     action = "!Activate;@{selected|token_id};Team;?{Stand and Fire|Rotate|Normal Move|At the Double|Covering Fire|Deploy}";
                 } else if (sectionFlag === true) {
-                    action = "!Activate;@{selected|token_id};?{Unit|Team|Section};?{Action|Stand and Fire|Tactical Move|Move and Fire|Normal Move|At the Double|Covering Fire|Deploy}";
+                    action = "!Activate;@{selected|token_id};?{Unit|Team|Section};?{Action|Stand and Fire|Tactical Move|Move and Fire|Normal Move|At the Double|Deploy}";
                 } else if (sectionFlag === false) {
-                    action = "!Activate;@{selected|token_id};Team;?{Action|Stand and Fire|Tactical Move|Move and Fire|Normal Move|At the Double|Covering Fire|Deploy}";
+                    action = "!Activate;@{selected|token_id};Team;?{Action|Stand and Fire|Tactical Move|Move and Fire|Normal Move|At the Double|Deploy}";
                 } 
                 AddAbility(abilityName,action,char.id);
 
-                abilityName = "Overwatch";
-                action = "!Activate;@{selected|token_id};Team;Overwatch";
+                abilityName = "Orders";
+                action = "!Activate;@{selected|token_id};Team;?{Action|Covering Fire|Overwatch}";
                 AddAbility(abilityName,action,char.id);
 
                 abilityName = "Rejoin";
