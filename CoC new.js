@@ -3027,7 +3027,6 @@ log(rank)
             let losCheck = false;
             for (let i=0;i<team.modelIDs.length;i++) {
                 let losResult = LOS(team.modelIDs[i],markerID);
-log(losResult)
                 if (losResult.los === true) {
                     losCheck = true;
                     break;
