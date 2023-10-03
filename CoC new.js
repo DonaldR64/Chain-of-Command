@@ -2870,8 +2870,8 @@ log(rank)
                 } 
                 AddAbility(abilityName,action,char.id);
 
-                abilityName = "Special";
-                action = "!Activate;@{selected|token_id};Team;?{Action|Covering Fire|Overwatch|Rejoin}";
+                abilityName = "Orders";
+                action = "!Activate;@{selected|token_id};Team;?{Action|Covering Fire|Overwatch}";
                 AddAbility(abilityName,action,char.id);
 
                 abilityName = "Fire";
