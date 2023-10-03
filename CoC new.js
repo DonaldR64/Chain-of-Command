@@ -526,7 +526,9 @@ const CoC = (() => {
             this.modelIDs = [];
             this.symbol = "";
             this.order = "";
-            this.markerID = ""; //tactical, overwatch or covering markers
+            this.markerID = ""; //overwatch or covering markers
+            this.scout = false; //turned true if a new scout team is created
+            this.parentTeamID = ""; //id of team scout team 'belongs to'
             TeamArray[teamID] = this;
         }
 
@@ -1335,6 +1337,8 @@ const CoC = (() => {
             let section = SectionArray[sectionID];
             let teamName = info[3];
             let teamID = info[4];
+            let extraNote = info[5]; //used by markers and scouts
+            let extraID = info[6]; // '' ''
             let team = TeamArray[teamID];
             let sectionColour = token.get("aura1_color");
             let leader = token.get("status_black-flag");
@@ -1345,7 +1349,7 @@ const CoC = (() => {
             if (!team) {
                 team = new Team(player,nation,teamID,teamName,sectionID);
                 let markers = token.get("statusmarkers");
-                let teamMarker = Nations[nation].teammarkers.filter(value => Nations[nation].teammarkers.includes(value));
+                let teamMarker = Nations[nation].teammarkers.filter(value => markers.includes(value));
                 team.symbol = teamMarker;
                 section.add(team);
             }
@@ -1354,6 +1358,17 @@ const CoC = (() => {
             if (model.type === "Patrol" && PatrolArray.includes(model.id) === false) {
                 PatrolArray.push(model.id);
             }
+            if (extraNote === "Marker") {
+                ModelArray[extraID].markerID = model.id;
+                model.placingTeamID = extraID;
+            }
+            if (extraNote === "Scout") {
+                team.scout === true;
+                team.parentID = extraID;
+            }
+
+
+
         });
 
         let elapsed = Date.now()-start;
@@ -2254,13 +2269,63 @@ log("Other side of Partial LOS Blocking Terrain")
 
     }
 
+    const ResetActivations = () => {
+        //reset team activations
+
+
+
+        Scouts()
+    
+
+
+
+
+
+
+
+
+
+    }
+
+    const Scouts = () => {
+        let teamKeys = Object.keys[TeamArray];
+        for (let i=0;i<teamKeys.length;i++) {
+            let team1 = TeamArray[teamKeys[i]];
+            if (team1.scout === false) {continue};
+            let team2 = TeamArray[team1.parentTeamID];
+            let section = SectionArray[team1.sectionID];
+            if (TeamsInRange(team1,team2) === true) {
+                let t1L = ModelArray[team1.modelIDs[0]];
+                let t2L = ModelArray[team2.modelIDs[0]];
+                let gmn = t2L.get("gmnotes");
+                let teamMarker = Nations[nation].teammarkers.filter(value => markers.includes(value));
+                let t1Shock = parseInt(t1L.token.get("bar3_value"));
+                let t2Shock = parseInt(t2L.token.get("bar3_value")) + t1Shock;
+                t2L.token.set("bar3_value",t2Shock);
+                for (let j=0;j<team1.modelIDs.length;j++) {
+                    let m1 = ModelArray[team1.modelIDs[j]];
+                    m1.token.set("gmnotes",gmn);
+                    m1.token.set("statusmarkers",teamMarker);
+                    team2.add(m1);
+                }
+    //UpdateShock(team2);
+                section.remove(team1);
+                team1.remove();
+            }
+        }
+    }
+
+
+
+
+
 
     const CommandDice = (msg) => {
         for (let i=0;i<CommandDiceArray.length;i++) {
             let obj = CommandDiceArray[i];
             obj.remove();
         }
-        //ResetActivations();
+        ResetActivations();
         let nation;
         let changeCoC = 0;
         if (!msg.selected) {
@@ -2926,7 +2991,8 @@ log(rank)
     }
 
 
-    const TeamsInRange = (team1,team2) => {
+    const TeamsInRange = (team1,team2,range) => {
+        if (!range) {range = 40}; //most things
         //returns true if a member of 1 is in range of a member of 2
         let inRange = false;
         inRangeLoop1:
@@ -2937,7 +3003,7 @@ log(rank)
                 let id2 = team2.modelIDs[j];
                 let model2 = ModelArray[id2];
                 let dist = ModelDistance(model1,model2).distance;
-                if (dist <= 40) {
+                if (dist <= range) {
                     inRange = true;
                     break inRangeLoop1;
                 }
@@ -2946,9 +3012,9 @@ log(rank)
         return inRange;
     }
 
-    const PlaceMarker = (type,team) => {
+    const PlaceMarker = (type,placingTeam) => {
         let img,w,h,charID;
-        let teamLeader = ModelArray[team.modelIDs[0]];
+        let placingTeamLeader = ModelArray[placingTeam.modelIDs[0]];
         if (type === "overwatch")  {
             img = getCleanImgSrc("https://s3.amazonaws.com/files.d20.io/images/350758041/b68-lK7VEeV5kUXd8OgekA/thumb.png?1689607404");
             w = 140;
@@ -2964,13 +3030,13 @@ log(rank)
         let teamID = stringGen();
         let markerSection = SectionArray[sectionID];
         if (!markerSection) {
-            markerSection = new Section(teamLeader.player,teamLeader.nation,sectionID,"Markers",false,"");
+            markerSection = new Section(placingTeamLeader.player,placingTeamLeader.nation,sectionID,"Markers",false,"");
         }
-        let markerTeam = new Team(teamLeader.player,teamLeader.nation,teamID,"Markers",sectionID);
+        let markerTeam = new Team(placingTeamLeader.player,placingTeamLeader.nation,teamID,"Markers",sectionID);
         markerSection.add(markerTeam);
-        let gmn = false + ";Markers;" + sectionID + ";Markers;" + team.id;
+        let gmn = false + ";Markers;" + sectionID + ";Markers;" + teamID + ";" + "Marker" + ";" + placingTeam.id;
 
-        let location = hexMap[teamLeader.hexLabel].centre
+        let location = hexMap[placingTeamLeader.hexLabel].centre
         let newToken = createObj("graphic", {   
             left: location.x,
             top: location.y,
@@ -2984,7 +3050,7 @@ log(rank)
             layer: "objects",
         });
         toFront(newToken);
-        team.markerID = newToken.id;
+        placingTeamLeader.markerID = newToken.id;
         let marker = new Model(newToken.id,sectionID,teamID,true);
         marker.placingTeamID = team.id
         markerTeam.add(marker);
