@@ -661,6 +661,7 @@ const CoC = (() => {
             this.quality = attributeArray.quality;
             this.special = special;
             this.initiative = 0;
+            this.command = 0;
             this.leaderTeamIDs = [];
             this.soloNCO = false; //true if is an unattached NCO
             if (this.special.includes("Junior Leader")) {
@@ -2902,7 +2903,12 @@ log(patrol.name + ": " + dist)
         }
         SetupCard(leader.name,"Command Dice: " + d,leader.nation);
         TeamArray[leader.teamID].order = choice;
-
+        if (parseInt(leader.command) >= parseInt(leader.initiative)) {
+            outputCard.body.push(leader.name + " has no more Command Points");
+            PrintCard();
+            return;
+        }
+        leader.command++;
         let moveDice = [];
         for (let i=0;i<3;i++) {
             moveDice.push(randomInteger(6));
