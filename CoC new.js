@@ -2993,56 +2993,50 @@ log(patrol.name + ": " + dist)
         let leaderID = Tag[1];
         let order = Tag[2];
         let targetID = Tag[3];
-        let leader = BaseArray[leaderID];
+        let leader = ModelArray[leaderID];
+        let leaderTeam = TeamArray[leader.teamID];
         SetupCard(leader.name,order,leader.nation);
         let errorMsg = "";
         if (leader.command >= leader.initiative) {
-            errorMsg = "Unable to give any more orders this Phase";
+            errorMsg = "Unable to give any more Order this Phase";
         }
-        let target = BaseArray[targetID];
+        let target = ModelArray[targetID];
         let targetTeam = TeamArray[target.teamID];
-        let targetUnit = UnitArray[targetTeam.unitID];
-        if (targetUnit.teams.length < 2 && (order === "Transfer Man to Team" || order === "Detach Team")) {
-            errorMsg = "Only the one Team";
+        //change target to be the first base of team
+        target = ModelArray[targetTeam.modelIDs[0]];
+        let targetSection = SectionArray[targetTeam.sectionID];
+        if (targetSection.teamIDs.length < 3 && (order === "Transfer Man to Team" || order === "Detach Team")) {
+            errorMsg = "Only the one Team"; //leader is 1st ID
         }
-        inCommandRange = false;
-        withTeam = (targetTeam.nco === leaderID || targetTeam.co === leaderID) ? true:false;
-        for (let i=0;i<targetTeam.bases.length;i++) {
-            let t2 = BaseArray[targetTeam.bases[i]]
-            let dist = leader.hex.distance(t2.hex);
-            if (dist <= (3 * leader.initiative)) {
-                inCommandRange = true;
-                break;
-            }
-        }
-        if (inCommandRange === false) {
+        let commandRange = leader.initiative * 3;
+        if (TeamsInRange(leaderTeam,targetTeam,commandRange) === false) {
             errorMsg = "Target is too far to Command/Rally";
         }
+        let flag = false; //leader is assoc/part of targetTeam
+        if (TeamsInRange(leaderTeam,targetTeam,40) === false) {
+            flag = true;
+        }
 
-        //change target to be the first base of team
-        targetLeaderID = targetTeam.bases[0];
-        targetLeader = BaseArray[targetLeaderID];
-
-        if (order === "Rally" && withTeam === false && inCommandRange === true) {
-            //check if enemy in LOS
-            for (let i=0;i<targetTeam.bases.length;i++) {
-                if (errorMsg !== "") {continue};
-                let friendlyTeam = targetTeam.bases[i];
-                let keys = Object.keys(BaseArray);
+        if (order === "Rally" && errorMsg === "" && flag === false) {
+            //check if enemy in LOS, cant rally if is (not part of targetTeam)
+            let keys = Object.keys(ModelArray);
+            rallyloop1:
+            for (let i=0;i<targetTeam.modelIDs.length;i++) {
+                let tID = targetTeam.modelIDs[i];
                 for (let j=0;j<keys.length;j++) {
-                    let enemyTeam = BaseArray[keys[j]];
-                    if (enemyTeam.player === leaderTeam.player) {continue};
-                    let losResult = LOS(friendlyTeam.id,enemyTeam.id);
-                    if (losResult.los === true) {
-                        errorMsg = "Can't Rally due to Enemy in LOS";
-                        break;
+                    let losResult = LOS(tID,keys[j]);
+                    if (losResult === true) {
+                        errorMsg = "Target Team is in LOS of an Enemy and can't be rallied";
+                        break rallyloop1;
                     }
                 }
             }
         }
-        if (targetTeam.pinned === true && (order === "Covering Fire" || order === "Throw/Fire Grenade" || order === "Fire Squad AT Weapon" )) {
+
+        if (targetTeam.pinned() === true && (order === "Covering Fire" || order === "Throw/Fire Grenade" || order === "Fire Squad AT Weapon" )) {
             errorMsg = "Pinned Unit cannot follow that order";
         }
+////
         if (targetLeader.token.get("aura1_color") === colours.black && (order === "Activate" || order === "Overwatch" || order === "Covering Fire")) {
             errorMsg = "Target has already been activated";
         }
@@ -3200,6 +3194,10 @@ log(patrol.name + ": " + dist)
                 AddAbility(abilityName,action,char.id);
 
             } else {
+
+//split junior and senior up - Transfer is only Junior, AT vs Infantry is only Senior
+
+
                 //Leader
                 abilityName = "Issue Order";
                 action = "!Order;@{selected|token_id};?{Order|Activate|Overwatch|Covering Fire|Rally|Throw/Fire Grenade|Smoke Grenades|Fire Squad AT Weapon|Transfer Man to Team|Detach Team};@{target|token_id}";
