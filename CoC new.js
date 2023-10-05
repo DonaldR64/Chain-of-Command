@@ -1365,7 +1365,7 @@ const CoC = (() => {
                 ModelArray[extraID].markerID = model.id;
                 model.placingTeamID = extraID;
             }
-            if (extraNote === "Scout") {
+            if (extraNote === "Scouts") {
                 team.scout === true;
                 team.parentID = extraID;
             }
@@ -1596,29 +1596,33 @@ log("Intervening Higher Terrain");
             if (interHex.smokeGrenade === true && B <= 20) {
                 smokeGrenade = true;
             }
-
-            //check for intervening friendlies in 2 hexes of interHex - can ignore if same team
-            //if find one, flag and note height
             let friendlyFlag = false;
             let enemyVehicle = false;
             let friendlyHeight = 0;
-log("Friendlies")
-            for (let t=0;t<fKeys.length;t++) {
-                let fm = ModelArray[fKeys[t]];
-                if (fm.id === model1.id || fm.id === model2.id || fm.player !== model1.player || fm.teamID === model1.teamID) {continue};
-log(fm.name + " Player: " + fm.player)
-                let fHexes = fm.hexList;
-                for (let u=0;u<fHexes.length;u++) {
-                    let fHex = fHexes[u];
-                    let dis = fHex.distance(qrs) * MapScale;
-log("Friendlies Hex: " + fHex.label() + " / Distance " + dis)
-                    if (dis < 20) {
-                        friendlyFlag = true;
-                        friendlyHeight = Math.max(fm.height,friendlyHeight);
-                        if (special === "Flamethrower") {friendlyHeight = 100}; //basically cant fire Flamethrower over heads of friendlies
+
+            if (special !== "Ignore Friendlies") {
+    //check for intervening friendlies in 2 hexes of interHex - can ignore if same team
+                //if find one, flag and note height
+    log("Friendlies")
+                for (let t=0;t<fKeys.length;t++) {
+                    let fm = ModelArray[fKeys[t]];
+                    if (fm.id === model1.id || fm.id === model2.id || fm.player !== model1.player || fm.teamID === model1.teamID) {continue};
+    log(fm.name + " Player: " + fm.player)
+                    let fHexes = fm.hexList;
+                    for (let u=0;u<fHexes.length;u++) {
+                        let fHex = fHexes[u];
+                        let dis = fHex.distance(qrs) * MapScale;
+    log("Friendlies Hex: " + fHex.label() + " / Distance " + dis)
+                        if (dis < 20) {
+                            friendlyFlag = true;
+                            friendlyHeight = Math.max(fm.height,friendlyHeight);
+                            if (special === "Flamethrower") {friendlyHeight = 100}; //basically cant fire Flamethrower over heads of friendlies
+                        }
                     }
                 }
             }
+            
+
             //check for intervening enemy vehicle blocking LOS
             for (let t=0;t<fKeys.length;t++) {
                 let fm = ModelArray[fKeys[t]];
@@ -1816,7 +1820,9 @@ log("Other side of Partial LOS Blocking Terrain")
         } else {
             outputCard.body.push("Activated with " + team.order);
         }
-
+        if (model.special.includes("Leader")) {
+            outputCard.body.push("Commands Left: " + (parseInt(model.initiative) - parseInt(model.command)) + " of " + model.initiative);
+        }
         for (let i=0;i<team.modelIDs.length;i++) {
             let m = ModelArray[team.modelIDs[i]];
             outputCard.body.push(m.name);
@@ -1826,7 +1832,12 @@ log("Other side of Partial LOS Blocking Terrain")
         PrintCard();
     }
 
+    const UpdateShock = (team) => {
 
+
+
+
+    }
 
 
 
@@ -2990,14 +3001,14 @@ log(patrol.name + ": " + dist)
 
 
     const Order = (msg) => {
-        //!Order;@{selected|token_id};?{Order|Activate|Rally|Throw/Fire Grenade|Smoke Grenades|Fire Squad AT Weapon|Transfer Man to This Team|Scouts};@{target|token_id}
+        //!Order;@{selected|token_id};?{Order|Activate|Rally|Throw/Fire Grenade|Smoke Grenades|Fire Squad AT Weapon|Transfer Man to Target Team|Send Scouts};@{target|token_id}
         let Tag = msg.content.split(";");
         let leaderID = Tag[1];
         let order = Tag[2];
         let targetID = Tag[3];
         let leader = ModelArray[leaderID];
         let leaderTeam = TeamArray[leader.teamID];
-        let commandRange = leader.initiative * 3;
+        let commandRange = leader.initiative * 30;
 
         SetupCard(leader.name,order,leader.nation);
         let errorMsg = "";
@@ -3011,7 +3022,7 @@ log(patrol.name + ": " + dist)
         let targetSection = SectionArray[targetTeam.sectionID];
 
         if (TeamsInRange(leaderTeam,targetTeam,commandRange) === false) {
-            errorMsg = "Target is too far to Command/Rally";
+            errorMsg = "Target is out of Command Range";
         }
 
         let donatingTeam;
@@ -3048,7 +3059,7 @@ log(patrol.name + ": " + dist)
             for (let i=0;i<targetTeam.modelIDs.length;i++) {
                 let tID = targetTeam.modelIDs[i];
                 for (let j=0;j<keys.length;j++) {
-                    let losResult = LOS(tID,keys[j]);
+                    let losResult = LOS(tID,keys[j],"Ignore Friendlies");
                     if (losResult === true) {
                         errorMsg = "Target Team is in LOS of an Enemy and can't be rallied";
                         break rallyloop1;
@@ -3094,21 +3105,36 @@ log(patrol.name + ": " + dist)
                     targetTeam.add(model);
                     outputCard.body.push("Man transferred to Team");
                 }
-            } else if (order === "Scouts") {
-                let newTeam = new Team(leader.player,leader.nation,stringGen(),section.name,section.id);
+            } else if (order.includes("Scouts")) {
+                let newTeam = new Team(leader.player,leader.nation,stringGen(),"Scouts",targetSection.id);
+                let scoutNames = [];
                 for (let i=0;i<2;i++) {
                     let scout = ModelArray[targetTeam.modelIDs[targetTeam.modelIDs.length - 1]];
+                    core = false;
+                    if (targetSection.core === true) {
+                        core = true;
+                    }
+                    //new gmn 5 = Scout, 6 = targetTeam.id
+                    let gmn = core + ";" + targetSection.name + ";" + targetSection.id + ";" + "Scouts" + ";" + newTeam.id + ";" + "Scouts" + ";" + targetTeam.id;
+                    //letters, marker
+                    let num = targetSection.teamIDs.length;
+                    let marker = Nations[target.nation].teammarkers[num];
+                    scout.token.set("statusmarkers",marker);
                     targetTeam.remove(scout);
                     newTeam.add(scout);
+                    scoutNames.push(scout.name);
                 }
+                newTeam.scout = true;
+                newTeam.parentTeamID = targetTeam.id;
                 newTeam.leader();
-                section.add(newTeam);
-                ModelArray[newTeam.modelIDs[0]].token.set(sm.order,true);
-                outputCard.body.push("Scout Team formed and may activate and take a Move Order");
+                targetSection.add(newTeam);
+                ModelArray[newTeam.modelIDs[0]].token.set(SM.order,true);
+                outputCard.body.push(scoutNames[0] + " & " + scoutNames[1] + "  are detached as a Scout Team");
+                outputCard.body.push("The Scouts may now activate and take a Move Order");
             } else {
                 outputCard.body.push("Unit can now " + order);
                 //place status marker on team leader so that can use order
-                target.token.set(sm.order,true);
+                target.token.set(SM.order,true);
             }
         }
         PrintCard();
@@ -3174,27 +3200,18 @@ log(patrol.name + ": " + dist)
                 AddAbility(abilityName,action,char.id);
 
             } else {
-
-//split junior and senior up - Transfer is only Junior, AT vs Infantry is only Senior
-
-
-                //Leader
                 abilityName = "Issue Order";
-                action = "!Order;@{selected|token_id};?{Order|Activate|Overwatch|Covering Fire|Rally|Throw/Fire Grenade|Smoke Grenades|Fire Squad AT Weapon|Transfer Man to Team|Detach Team};@{target|token_id}";
+//split junior and senior up - Transfer is only Junior, AT vs Infantry is only Senior
+                if (model.special.includes("Junior")) {
+                    action = "!Order;@{selected|token_id};?{Order|Activate|Rally|Throw/Fire Grenade|Smoke Grenades|Fire Squad AT Weapon|Transfer Man to Target Team|Send Scouts};@{target|token_id}";
+                } else if (model.special.includes("Senior")) {
+                    action = "!Order;@{selected|token_id};?{Order|Activate|Rally|Throw/Fire Grenade|Smoke Grenades|Fire Squad AT Weapon|Send Scouts};@{target|token_id}";
+                }
                 AddAbility(abilityName,action,char.id);
                 abilityName = "Move/Deploy";
                 action = "!LeaderSelf;@{selected|token_id};?{Tactical Move|Normal Move|At the Double|Deploy}";
                 AddAbility(abilityName,action,char.id);
-
-
-
-
             }
-
-
-
-
-
         }
 
         if (type === "Gun") {
