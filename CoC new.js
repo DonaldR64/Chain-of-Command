@@ -498,6 +498,7 @@ const CoC = (() => {
         add(team) {
             if (this.teamIDs.includes(team.id) === false) {
                 this.teamIDs.push(team.id);
+                team.sectionID = this.id;
             }
         }
 
@@ -539,6 +540,7 @@ const CoC = (() => {
                 } else {
                     this.modelIDs.push(model.id);
                 }
+                model.teamID = this.id;
             }
         }
 
@@ -2988,30 +2990,52 @@ log(patrol.name + ": " + dist)
 
 
     const Order = (msg) => {
-        //!Order;@{selected|token_id};?{Order|Activate|Overwatch|Covering Fire|Rally|Throw/Fire Grenade|Smoke Grenades|Fire Squad AT Weapon|Transfer Man to Team};@{target|token_id}
+        //!Order;@{selected|token_id};?{Order|Activate|Rally|Throw/Fire Grenade|Smoke Grenades|Fire Squad AT Weapon|Transfer Man to This Team|Scouts};@{target|token_id}
         let Tag = msg.content.split(";");
         let leaderID = Tag[1];
         let order = Tag[2];
         let targetID = Tag[3];
         let leader = ModelArray[leaderID];
         let leaderTeam = TeamArray[leader.teamID];
+        let commandRange = leader.initiative * 3;
+
         SetupCard(leader.name,order,leader.nation);
         let errorMsg = "";
         if (leader.command >= leader.initiative) {
-            errorMsg = "Unable to give any more Order this Phase";
+            errorMsg = "Unable to give any more Orders this Phase";
         }
         let target = ModelArray[targetID];
         let targetTeam = TeamArray[target.teamID];
         //change target to be the first base of team
         target = ModelArray[targetTeam.modelIDs[0]];
         let targetSection = SectionArray[targetTeam.sectionID];
-        if (targetSection.teamIDs.length < 3 && (order === "Transfer Man to Team" || order === "Detach Team")) {
-            errorMsg = "Only the one Team"; //leader is 1st ID
-        }
-        let commandRange = leader.initiative * 3;
+
         if (TeamsInRange(leaderTeam,targetTeam,commandRange) === false) {
             errorMsg = "Target is too far to Command/Rally";
         }
+
+        let donatingTeam;
+        if (order.includes("Transfer")) {
+            for (let i=0;i<targetSection.teamIDs.length;i++) {
+                let id = targetSection.teamIDs[i];
+                if (id === leaderTeam.id || id === targetTeam.id) {
+                    continue;
+                } else {
+                    donatingTeam = TeamArray[id];
+                }
+            }
+            if (!donatingTeam || donatingTeam === null) {
+                errorMsg = "No Team to Transfer From";
+            } else {
+                if (TeamsInRange(leaderTeam,donatingTeam,commandRange) === false) {
+                    errorMsg = "Other Team is too far to Order the Transfer";
+                }
+            }
+        }
+        if (order.includes("Scouts") && targetTeam.modelIDs.length < 4) {
+            errorMsg = "Team is too small to split up further";
+        }
+
         let flag = false; //leader is assoc/part of targetTeam
         if (TeamsInRange(leaderTeam,targetTeam,40) === false) {
             flag = true;
@@ -3033,14 +3057,10 @@ log(patrol.name + ": " + dist)
             }
         }
 
-        if (targetTeam.pinned() === true && (order === "Covering Fire" || order === "Throw/Fire Grenade" || order === "Fire Squad AT Weapon" )) {
-            errorMsg = "Pinned Unit cannot follow that order";
-        }
-////
-        if (targetLeader.token.get("aura1_color") === colours.black && (order === "Activate" || order === "Overwatch" || order === "Covering Fire")) {
+        if (targetTeam.order !== "" && order === "Activate") {
             errorMsg = "Target has already been activated";
         }
-        if (target.broken() === true && order !== "Rally") {
+        if (targetTeam.broken() === true && order !== "Rally") {
             errorMsg = "Target is Broken";
         }
         if (order.includes("Grenade") || order.includes("AT Weapon")) {
@@ -3055,80 +3075,40 @@ log(patrol.name + ": " + dist)
             leader.command += 1;
             if (order === "Rally") {
                 outputCard.body.push("1 point of Shock rallied");
-                let shock = parseInt(targetLeader.token.get("bar3_value"));
+                let shock = parseInt(target.token.get("bar3_value"));
                 shock -= 1;
-                targetLeader.token.set("bar3_value",shock);
-                if (shock === 0) {
-                    targetLeader.token.set("status_red",false);
-                }
-            } else if (order === "Transfer Man to Team") {
-                let donatingTeam,donatingBase;
-                for (let t=0;t<targetUnit.teams.length;t++) {
-                    let tid = targetUnit.teams[t];
-                    if (tid === target.teamID) {continue};
-                    if (TeamArray[tid].leader === true) {continue};
-                    donatingTeam = TeamArray[tid];
-                }
-                if (!donatingTeam) {
-                    outputCard.body.push("Error with other team");
-                    PrintCard();
-                    return;
-                }
-                let lastBaseNum = donatingTeam.bases.length - 1;
-                donatingBase = BaseArray[donatingTeam.bases[lastBaseNum]];              
-
-                let tH = parseInt(target.token.get("bar1_value")) + 1;
-                let tsides = target.token.get("sides").split("|");
-                let currentSideMax = tsides.length;
-
-                if (tH > currentSideMax) {
-                    outputCard.body.push("Target is at Max # of Men");
-                    PrintCard();
-                    return;
+                target.token.set("bar3_value",shock);
+                UpdateShock(targetTeam);
+            } else if (order.includes("Transfer")) {
+                let model = ModelArray[donatingTeam.modelIDs[donatingTeam.modelIDs.length - 1]];
+                donatingTeam.remove(model);
+                if (target.special.includes("Crew")) {
+                    let crew = parseInt(target.token.get("bar1_value"));
+                    let maxCrew = parseInt(target.token.get("bar1_max"));
+                    if (crew < maxCrew) {
+                        crew++;
+                        target.token.set("bar1_value",crew);
+                        outputCard.body.push("Man added to Crew");
+                    }
                 } else {
-                    outputCard.body.push("Man Transferred");
+                    targetTeam.add(model);
+                    outputCard.body.push("Man transferred to Team");
                 }
-                let tside = tH - 1;
-                let timg = tokenImage(tsides[tside]);
-                target.token.set({
-                    bar1_value: tH,
-                    currentSide: tside, //zero indexed
-                    imgsrc: timg,
-                })
-                let dbH = parseInt(donatingBase.token.get("bar1_value")) - 1;
-                if (dbH === 0) {
-                    donatingBase.remove();
-                } else {
-                    let dsides = donatingBase.token.get("sides").split("|");
-                    let dside = dbH - 1;
-                    let dimg = tokenImage(dsides[dside]);
-                    donatingBase.token.set({
-                        bar1_value: dbH,
-                        currentSide: dside, //zero indexed
-                        imgsrc: dimg,
-                    });
+            } else if (order === "Scouts") {
+                let newTeam = new Team(leader.player,leader.nation,stringGen(),section.name,section.id);
+                for (let i=0;i<2;i++) {
+                    let scout = ModelArray[targetTeam.modelIDs[targetTeam.modelIDs.length - 1]];
+                    targetTeam.remove(scout);
+                    newTeam.add(scout);
                 }
-            } else if (order === "Detach Team") {
-                //detach target to be a new scout team
-                let newTeam = new Team("Scouts",target.player,target.nation,targetUnit.id);
-                newTeam.add(target);   
-                newTeam.scout = true;
-                newTeam.parentTeamID = targetTeam.id;
-                target.teamID = newTeam.id;
-                let gmnotes = target.token.get("gmnotes").split(";");
-                gmnotes[0] = "Scouts";
-                gmnotes[1] = newTeam.id;
-                gmnotes = gmnotes[0] + ";" + gmnotes[1] + ";" + gmnotes[2] + ";" + gmnotes[3] + ";" + gmnotes[4] + ";" + targetTeam.id;
-                target.token.set("gmnotes",gmnotes);
-                targetTeam.remove(target);
-                targetUnit.add(newTeam);
-                let colour = BaseArray[targetTeam.bases[0]].token.get("aura1_color");
-                target.token.set("aura1_color",colour);
-                outputCard.body.push("Scout Team Created and can operate independently");
+                newTeam.leader();
+                section.add(newTeam);
+                ModelArray[newTeam.modelIDs[0]].token.set(sm.order,true);
+                outputCard.body.push("Scout Team formed and may activate and take a Move Order");
             } else {
-                outputCard.body.push("Unit can execute the " + order + " Order");
+                outputCard.body.push("Unit can now " + order);
                 //place status marker on team leader so that can use order
-                targetLeader.token.set(sm.order,true);
+                target.token.set(sm.order,true);
             }
         }
         PrintCard();
@@ -3443,6 +3423,9 @@ log(patrol.name + ": " + dist)
                 break;
             case '!LeaderSelf':
                 LeaderSelf(msg);
+                break;
+            case '!Order':
+                Order(msg);
                 break;
         }
     };
