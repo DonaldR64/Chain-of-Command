@@ -553,6 +553,13 @@ const CoC = (() => {
 
         remove(model) {
             let index = this.modelIDs.indexOf(model.id);
+            if (index === 0) {
+                let shock = parseInt(model.token.get("bar3_value"));
+                let model2 = ModelArray[this.modelIDs[1]];
+                if (model2) {
+                    model2.token.set("bar3_value",shock);
+                }
+            }
             if (index > -1) {
                 this.modelIDs.splice(index,1);
             }
@@ -1344,15 +1351,19 @@ const CoC = (() => {
             let extraID = info[6]; // '' ''
             let team = TeamArray[teamID];
             let sectionColour = token.get("aura1_color");
-            let leader = token.get("status_black-flag");
+            let statusmarkers = token.get("statusmarkers").split(",")
+log(token.get("name"))
+log(statusmarkers)
+            let teamMarkers = Nations[nation].teammarkers;
+            let teamMarker = returnCommonElements(statusmarkers,teamMarkers);
+
+log("Marker: " + teamMarker)
 
             if (!section) {
                 section = new Section(player,nation,sectionID,sectionName,core,sectionColour);
             }
             if (!team) {
                 team = new Team(player,nation,teamID,teamName,sectionID);
-                let markers = token.get("statusmarkers");
-                let teamMarker = Nations[nation].teammarkers.filter(value => markers.includes(value));
                 team.symbol = teamMarker;
                 section.add(team);
             }
@@ -2049,11 +2060,12 @@ log("Other side of Partial LOS Blocking Terrain")
 
             //now sort into "Teams" and Jr. Leaders
             for (let i=0;i<groups.length;i++) {
-                let statusmarkers = Nations[nation].teammarkers[i];
+                let teamMarker = Nations[nation].teammarkers[i];
                 let group = groups[i];
                 let letters = ["A","B","C","D","E","F","G"];
                 let teamName = sectionName + "/" + letters[i];
                 let team = new Team(player,nation,stringGen(),teamName,sectionID);
+                team.symbol = teamMarker;
                 let gmn = core + ";" + sectionName + ";" + sectionID + ";" + teamName + ";" + team.id;
                 for (let i=0;i<group.length;i++) {
                     let model = new Model(group[i],sectionID,team.id,false);
@@ -2087,7 +2099,7 @@ log("Other side of Partial LOS Blocking Terrain")
                         bar3_value: 0,
                         gmnotes: gmn,
                     });
-                    model.token.set("statusmarkers",statusmarkers);
+                    model.token.set("statusmarkers",teamMarker);
                 }
                 section.add(team);
             }
@@ -3006,9 +3018,11 @@ log(patrol.name + ": " + dist)
         let leaderID = Tag[1];
         let order = Tag[2];
         let targetID = Tag[3];
+        let otherTargetID = Tag[4]; //used in transfer or scouts
         let leader = ModelArray[leaderID];
         let leaderTeam = TeamArray[leader.teamID];
         let commandRange = leader.initiative * 30;
+        let receivingTeam;
 
         SetupCard(leader.name,order,leader.nation);
         let errorMsg = "";
@@ -3017,42 +3031,51 @@ log(patrol.name + ": " + dist)
         }
         let target = ModelArray[targetID];
         let targetTeam = TeamArray[target.teamID];
-        //change target to be the first base of team
-        target = ModelArray[targetTeam.modelIDs[0]];
+        //change target to be the first base of team depending on order
+        if (order.includes("Transfer") === false && order.includes("Scout") === false) {
+            target = ModelArray[targetTeam.modelIDs[0]];
+        }
         let targetSection = SectionArray[targetTeam.sectionID];
 
         if (TeamsInRange(leaderTeam,targetTeam,commandRange) === false) {
             errorMsg = "Target is out of Command Range";
         }
 
-        let donatingTeam;
         if (order.includes("Transfer")) {
-            for (let i=0;i<targetSection.teamIDs.length;i++) {
-                let id = targetSection.teamIDs[i];
-                if (id === leaderTeam.id || id === targetTeam.id) {
-                    continue;
-                } else {
-                    donatingTeam = TeamArray[id];
-                }
+            receivingTeam = TeamArray[ModelArray[otherTargetID].teamID];
+            if (!receivingTeam || receivingTeam === null) {
+                errorMsg = "No Team?"
             }
-            if (!donatingTeam || donatingTeam === null) {
-                errorMsg = "No Team to Transfer From";
+            if (receivingTeam.id === targetTeam.id) {
+                errorMsg = "Same Team";
+            } else if (TeamsInRange(leaderTeam,receivingTeam,40) === false) {
+                errorMsg = "Other Team is too far to Order the Transfer";
+            }
+            if (targetTeam.modelIDs.length === 1 && ModelArray[targetTeam.modelIDs[0]].special.includes("Crew")) {
+                errorMsg = "Can't transfer from a Crewed Weapons Team";
+            }
+        }
+
+        if (order.includes("Scouts")) {
+            if (targetID === otherTargetID) {
+                errorMsg = "Minimum 2 Man Team";
             } else {
-                if (TeamsInRange(leaderTeam,donatingTeam,commandRange) === false) {
-                    errorMsg = "Other Team is too far to Order the Transfer";
+                scout2 = ModelArray[otherTargetID];
+                if (target.teamID !== scout2.teamID) {
+                    errorMsg = "Scouts have to start in same team";
+                }
+                if (target.special.includes("Crew") || scout2.special.includes("Crew")) {
+                    errorMsg = "Can't use Crew to form Scout Team";
                 }
             }
         }
-        if (order.includes("Scouts") && targetTeam.modelIDs.length < 4) {
-            errorMsg = "Team is too small to split up further";
+
+        let partOfTeamFlag = false; //leader is assoc/part of targetTeam
+        if (TeamsInRange(leaderTeam,targetTeam,40) === true) {
+            partOfTeamFlag = true;
         }
 
-        let flag = false; //leader is assoc/part of targetTeam
-        if (TeamsInRange(leaderTeam,targetTeam,40) === false) {
-            flag = true;
-        }
-
-        if (order === "Rally" && errorMsg === "" && flag === false) {
+        if (order === "Rally" && errorMsg === "" && partOfTeamFlag === false) {
             //check if enemy in LOS, cant rally if is (not part of targetTeam)
             let keys = Object.keys(ModelArray);
             rallyloop1:
@@ -3091,46 +3114,63 @@ log(patrol.name + ": " + dist)
                 target.token.set("bar3_value",shock);
                 UpdateShock(targetTeam);
             } else if (order.includes("Transfer")) {
-                let model = ModelArray[donatingTeam.modelIDs[donatingTeam.modelIDs.length - 1]];
-                donatingTeam.remove(model);
-                if (target.special.includes("Crew")) {
-                    let crew = parseInt(target.token.get("bar1_value"));
-                    let maxCrew = parseInt(target.token.get("bar1_max"));
+                targetTeam.remove(target);
+                target.token.set("statusmarkers","");
+                if (targetTeam.modelIDs.length > 1) {
+                    targetTeam.leader();
+                }
+                let receivingLeader = ModelArray[receivingTeam.modelIDs[0]];
+                if (receivingLeader.special.includes("Crew")) {
+                    let crew = parseInt(receivingLeader.token.get("bar1_value"));
+                    let maxCrew = parseInt(receivingLeader.token.get("bar1_max"));
                     if (crew < maxCrew) {
                         crew++;
-                        target.token.set("bar1_value",crew);
+                        receivingLeader.token.set("bar1_value",crew);
                         outputCard.body.push("Man added to Crew");
                     }
                 } else {
-                    targetTeam.add(model);
+                    receivingTeam.add(target);
+                    gmn = receivingLeader.token.get("gmnotes");
+                    let teamMarker = receivingTeam.symbol; 
+                    target.token.set({
+                        gmnotes: gmn,
+                        statusmarkers: teamMarker,
+                    })
                     outputCard.body.push("Man transferred to Team");
                 }
             } else if (order.includes("Scouts")) {
                 let newTeam = new Team(leader.player,leader.nation,stringGen(),"Scouts",targetSection.id);
                 let scoutNames = [];
-                for (let i=0;i<2;i++) {
-                    let scout = ModelArray[targetTeam.modelIDs[targetTeam.modelIDs.length - 1]];
-                    core = false;
-                    if (targetSection.core === true) {
-                        core = true;
-                    }
-                    //new gmn 5 = Scout, 6 = targetTeam.id
-                    let gmn = core + ";" + targetSection.name + ";" + targetSection.id + ";" + "Scouts" + ";" + newTeam.id + ";" + "Scouts" + ";" + targetTeam.id;
-                    //letters, marker
-                    let num = targetSection.teamIDs.length;
-                    let marker = Nations[target.nation].teammarkers[num];
-                    scout.token.set("statusmarkers",marker);
-                    targetTeam.remove(scout);
-                    newTeam.add(scout);
-                    scoutNames.push(scout.name);
+                core = false;
+                if (targetSection.core === true) {
+                    core = true;
                 }
+                let gmn = core + ";" + targetSection.name + ";" + targetSection.id + ";" + "Scouts" + ";" + newTeam.id + ";" + "Scouts" + ";" + targetTeam.id;
+                let num = targetSection.teamIDs.length;
+                let marker = Nations[target.nation].teammarkers[num];
+                targetTeam.remove(target);
+                newTeam.add(target);
+                scoutNames.push(target.name);
+                target.token.set({
+                    gmnotes: gmn,
+                    statusmarkers: marker,
+                });
+                targetTeam.remove(scout2);
+                newTeam.add(scout2);
+                scoutNames.push(scout2.name);
+                scout2.token.set({
+                    gmnotes: gmn,
+                    statusmarkers: marker,
+                })
                 newTeam.scout = true;
                 newTeam.parentTeamID = targetTeam.id;
                 newTeam.leader();
+                targetTeam.leader();
                 targetSection.add(newTeam);
                 ModelArray[newTeam.modelIDs[0]].token.set(SM.order,true);
                 outputCard.body.push(scoutNames[0] + " & " + scoutNames[1] + "  are detached as a Scout Team");
                 outputCard.body.push("The Scouts may now activate and take a Move Order");
+                UpdateShock(targetTeam);
             } else {
                 outputCard.body.push("Unit can now " + order);
                 //place status marker on team leader so that can use order
@@ -3201,16 +3241,21 @@ log(patrol.name + ": " + dist)
 
             } else {
                 abilityName = "Issue Order";
-//split junior and senior up - Transfer is only Junior, AT vs Infantry is only Senior
-                if (model.special.includes("Junior")) {
-                    action = "!Order;@{selected|token_id};?{Order|Activate|Rally|Throw/Fire Grenade|Smoke Grenades|Fire Squad AT Weapon|Transfer Man to Target Team|Send Scouts};@{target|token_id}";
-                } else if (model.special.includes("Senior")) {
-                    action = "!Order;@{selected|token_id};?{Order|Activate|Rally|Throw/Fire Grenade|Smoke Grenades|Fire Squad AT Weapon|Send Scouts};@{target|token_id}";
-                }
+                action = "!Order;@{selected|token_id};?{Order|Activate|Rally|Throw/Fire Grenade|Smoke Grenades|Fire Squad AT Weapon};@{target|token_id}";
                 AddAbility(abilityName,action,char.id);
+                if (model.special.includes("Junior")) {
+                    abilityName = "Transfer Man"
+                    action = "!Order;@{selected|token_id};Transfer;@{target|Man toTransfer|token_id};@{target|Team to Transfer To|token_id};";
+                    AddAbility(abilityName,action,char.id);
+                } 
                 abilityName = "Move/Deploy";
                 action = "!LeaderSelf;@{selected|token_id};?{Tactical Move|Normal Move|At the Double|Deploy}";
                 AddAbility(abilityName,action,char.id);
+                abilityName = "Send Scouts";
+                action = "!Order;@{selected|token_id};Send Scouts;@{target|1st Man|token_id};@{target|2nd Man|token_id}";
+                AddAbility(abilityName,action,char.id);
+
+
             }
         }
 
