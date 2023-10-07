@@ -524,10 +524,12 @@ const CoC = (() => {
             this.name = teamName;
             this.player = player;
             this.nation = nation;
+            this.type = "";
             this.sectionID = sectionID;
             this.modelIDs = [];
             this.symbol = "";
             this.order = "";
+            this.shockTokenID = "";
             this.markerID = ""; //overwatch or covering markers
             this.scout = false; //turned true if a new scout team is created
             this.parentTeamID = ""; //id of team scout team 'belongs to'
@@ -542,6 +544,7 @@ const CoC = (() => {
                     this.modelIDs.push(model.id);
                 }
                 model.teamID = this.id;
+                team.type = model.type;
             }
         }
 
@@ -1849,6 +1852,27 @@ log("Other side of Partial LOS Blocking Terrain")
     }
 
     const UpdateShock = (team) => {
+        //updates the shock token and checks if broken/pinned
+        let teamLeader = ModelArray[team.modelIDs[0]];
+        let shock = parseInt(teamLeader.token.get("bar3_value"));
+        let shockToken = findObjs({_type:"graphic", id: team.shockTokenID})[0];
+        if (shock === 0) {
+            teamLeader.token.set("status_red",false);
+            if (shockToken) {
+                shockToken.remove();
+                team.shockTokenID = "";
+            }
+        } else {
+            teamLeader.token.set("status_red",true);
+            
+
+
+
+        }
+
+
+
+
 
 
 
