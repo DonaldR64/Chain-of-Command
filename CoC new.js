@@ -547,10 +547,11 @@ const CoC = (() => {
 
         leader() {
             this.modelIDs.sort((a,b) => {
-                let m1r = ModelArray[a].rank;
-                let m2r = ModelArray[b].rank;
-                if (m1r >= m2r) {return a};
-                if (m1r < m2r) {return b};
+                let m1r = parseInt(ModelArray[a].rank);
+                let m2r = parseInt(ModelArray[b].rank);
+                if (m1r < m2r) return +1
+                if (m1r > m2r) return -1
+                return 0    
             });
         }
 
