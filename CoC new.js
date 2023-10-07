@@ -508,6 +508,7 @@ const CoC = (() => {
                 this.teamIDs.splice(index,1);
             }
             if (this.teamIDs.length === 0) {
+                delete SectionArray[this.id];
                 //Bad Thing
             }
         }
@@ -535,7 +536,7 @@ const CoC = (() => {
 
         add(model) {
             if (this.modelIDs.includes(model.id) === false) {
-                if (model.special.includes("Crew") || model.token.get("status_black-flag") === true) {
+                if (model.special.includes("Crew")) {
                     this.modelIDs.unshift(model.id);
                 } else {
                     this.modelIDs.push(model.id);
@@ -545,10 +546,12 @@ const CoC = (() => {
         }
 
         leader() {
-            let leader = ModelArray[this.modelIDs[0]];
-            if (this.modelIDs.length > 1) {
-                leader.token.set("status_black-flag,true");
-            }
+            this.modelIDs.sort((a,b) => {
+                let m1r = ModelArray[a].rank;
+                let m2r = ModelArray[b].rank;
+                if (m1r >= m2r) {return a};
+                if (m1r < m2r) {return b};
+            });
         }
 
         remove(model) {
@@ -564,6 +567,7 @@ const CoC = (() => {
                 this.modelIDs.splice(index,1);
             }
             if (this.modelIDs.length === 0) {
+                delete TeamArray[this.id];
                 //Bad Thing
             }
         }
@@ -2334,9 +2338,9 @@ log("Other side of Partial LOS Blocking Terrain")
                     m1.token.set("statusmarkers",teamMarker);
                     team2.add(m1);
                 }
-    //UpdateShock(team2);
+                UpdateShock(team2);
                 section.remove(team1);
-                team1.remove();
+                delete TeamArray[team1.id];
             }
         }
     }
@@ -3116,9 +3120,6 @@ log(patrol.name + ": " + dist)
             } else if (order.includes("Transfer")) {
                 targetTeam.remove(target);
                 target.token.set("statusmarkers","");
-                if (targetTeam.modelIDs.length > 1) {
-                    targetTeam.leader();
-                }
                 let receivingLeader = ModelArray[receivingTeam.modelIDs[0]];
                 if (receivingLeader.special.includes("Crew")) {
                     let crew = parseInt(receivingLeader.token.get("bar1_value"));
@@ -3126,17 +3127,14 @@ log(patrol.name + ": " + dist)
                     if (crew < maxCrew) {
                         crew++;
                         receivingLeader.token.set("bar1_value",crew);
-                        outputCard.body.push("Man added to Crew");
+                        outputCard.body.push(target.name + " joins " + receivingLeader.name);
+                        target.token.remove();
                     }
                 } else {
                     receivingTeam.add(target);
-                    gmn = receivingLeader.token.get("gmnotes");
-                    let teamMarker = receivingTeam.symbol; 
-                    target.token.set({
-                        gmnotes: gmn,
-                        statusmarkers: teamMarker,
-                    })
-                    outputCard.body.push("Man transferred to Team");
+                    target.token.set("gmnotes",receivingLeader.token.get("gmnotes"));
+                    target.token.set("statusmarkers",receivingLeader.token.get("statusmarkers"));
+                    outputCard.body.push(target.name + " transfers to " + receivingTeam.name);
                 }
             } else if (order.includes("Scouts")) {
                 let newTeam = new Team(leader.player,leader.nation,stringGen(),"Scouts",targetSection.id);
