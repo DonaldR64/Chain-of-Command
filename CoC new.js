@@ -544,7 +544,7 @@ const CoC = (() => {
                     this.modelIDs.push(model.id);
                 }
                 model.teamID = this.id;
-                team.type = model.type;
+                this.type = model.type;
             }
         }
 
@@ -556,7 +556,26 @@ const CoC = (() => {
                 if (m1r > m2r) return -1
                 return 0    
             });
+            let men = this.men();
+            let leader = ModelArray[this.modelIDs[0]];
+            if (leader.special.includes("Leader") === false) {
+                leader.token.set({
+                    bar3_value: 0,
+                    bar3_max: men,
+                });
+            }
         }
+
+        men() {
+            let number = 0;
+            for (let i=0;i<this.modelIDs.length;i++) {
+                let m = ModelArray[this.modelIDs[i]];
+                number += parseInt(m.token.get("bar1_value"));
+            }
+            return number;
+        }
+
+
 
         remove(model) {
             let index = this.modelIDs.indexOf(model.id);
@@ -1855,28 +1874,23 @@ log("Other side of Partial LOS Blocking Terrain")
         //updates the shock token and checks if broken/pinned
         let teamLeader = ModelArray[team.modelIDs[0]];
         let shock = parseInt(teamLeader.token.get("bar3_value"));
-        let shockToken = findObjs({_type:"graphic", id: team.shockTokenID})[0];
         if (shock === 0) {
             teamLeader.token.set("status_red",false);
-            if (shockToken) {
-                shockToken.remove();
-                team.shockTokenID = "";
-            }
         } else {
             teamLeader.token.set("status_red",true);
-            
+
+            //need to see if pinned or broken
+            //change aura if is
+
+
+
+
+
+
 
 
 
         }
-
-
-
-
-
-
-
-
     }
 
 
@@ -1912,6 +1926,8 @@ log("Other side of Partial LOS Blocking Terrain")
                 showplayers_aura1: true,
                 bar1_value: 0,
                 bar1_max: "",
+                bar3_value: 0,
+                bar3_max: "",
                 gmnotes: "",
                 statusmarkers: "",
             });                
