@@ -1,7 +1,9 @@
 <input type="hidden" class="sheet-tabstoggle" name="attr_sheetTab"  value="display"  />
 <div>
-    <button type="action" name="act_input" >Input</button>
-    <button type="action" name="act_display" >Display</button>
+    <button type="action" name="act_input">Input</button>
+    <button type="action" name="act_display">Display</button>
+    <button type="action" name="act_force">Force Display</button>
+
 </div>
 
 <div class="sheet-input">
@@ -422,10 +424,17 @@
 </div>
 
 
+<div class="force">
+    <input type="hidden" name="attr_nation"/>
+
+</div>
+
+
+
 
 
 <script type="text/worker">
-    const buttonlist = ["input","display"];
+    const buttonlist = ["input","display","force"];
     buttonlist.forEach(button => {
         on(`clicked:${button}`, function() {
             setAttrs({
