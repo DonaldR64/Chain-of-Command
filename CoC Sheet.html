@@ -494,7 +494,7 @@
 
 
     on("change:armour change:type change:speed sheet:opened", function() {
-        getAttrs(["armour","type","speed","leadertype","rank","men","nation","quality","name"], function(values) {
+        getAttrs(["armour","type","speed","leadertype","rank","men","nation","quality","character_name"], function(values) {
             let type = values.type;
             let armour = values.armour;
             let armourInfo = "";
@@ -505,7 +505,7 @@
             let compLine = "";
             let numbers = ["One ","Two ","Three ","Four ","Five ","Six ","Seven ","Eight ","Nine ","Ten "];
 
-            let name = values.name || '';
+            let name = values.character_name || '';
             name = name.split(",");
             let name1 = name[0].trim();
             let name2 = name[1].trim();
