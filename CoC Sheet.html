@@ -15,7 +15,8 @@
             <label for="attr_type">Type:</label>
             <select name="attr_type">
                 <option value="" selected disabled hidden>Choose here</option>
-                <option value="Infantry">Infantry</option>
+                <option value="Infantry Team">Infantry Team</option>
+                <option value="Leader">Leader</option>
                 <option value="Gun">Gun</option>
                 <option value="Vehicle">Vehicle</option>
                 <option value="Patrol">Patrol</option>
@@ -35,14 +36,17 @@
         </div>
         <div class="col">
             <h3>Attributes</h3>
-            <label for="attr_rank">Rank (US Equiv):</label>
+            <label for="attr_leader">If Leader What Kind:</label>
+            <select name="attr_leader">
+                <option value="Junior">Junior</option>
+                <option value="Senior">Senior</option>
+            </select>
+            <label for="attr_rank">Rank (US Equiv) if Leader:</label>
             <select name="attr_rank">
-                <option value=0>Soldier</option>
-                <option value=1>Corporal</option>
-                <option value=2>Sergeant</option>
-                <option value=3>Staff Sergeant</option>
-                <option value=4>Lieutenant</option>
-                <option value=5>Captain</option>
+                <option value="Sergeant">Sergeant</option>
+                <option value="Staff Sergeant">Staff Sergeant</option>
+                <option value="Lieutenant">Lieutenant</option>
+                <option value="Captain">Captain</option>
             </select>
             <label for="attr_quality">Quality:</label>
             <select name="attr_quality">
@@ -51,6 +55,10 @@
                 <option value="Regular">Regular</option>
                 <option value="Elite">Elite</option>
             </select>
+
+            <label># of Men if Team:</label><input type="number" name="attr_men">
+
+
             <h3>Vehicle Info</h3>
             <label>Armour:</label><input type="text" name="attr_armour">
             <label for="attr_speed">Speed:</label>
@@ -223,10 +231,6 @@
      </div>
 
     </div>    
-    <div class="row">
-            <h3>Special Notes</h3>
-            <input type="text" name="attr_special">
-    </div>
 </div>
 
 
@@ -238,8 +242,8 @@
             <main>
                 <section class="header f-center">
                     <h1><span name="attr_character_name"></span></h1>
-                    <h3><span name="attr_quality"></h3>
-                    <h3><span name="attr_special"></span></h3>
+                    <h3><span name="attr_quality"></span> <span name="attr_type"></span></h3>
+                    <h3><span name="attr_extraline"></span></h3>
                 </section>
 
                 <section class="special f-center">
@@ -449,7 +453,7 @@
 
 
     on("change:armour change:type change:speed sheet:opened", function() {
-        getAttrs(["armour","type","speed","special","rank","nation"], function(values) {
+        getAttrs(["armour","type","speed","leader","rank","men","nation"], function(values) {
             let type = values.type;
             let armour = values.armour;
             let armourInfo = "";
@@ -457,8 +461,17 @@
             let speedInfo = "";
             let special = values.special;
             let nation = values.nation;
-            let rank = values.rank;
-            if (!rank) {rank = 0};
+            let extraLine = "";
+
+            if (type === "Leader") {
+                let leader = values.leader;
+                let rank = values.rank;
+                extraLine = rank + " - " + leader
+            } else if (type === "Infantry Team") {
+                extraLine = values.men + " Men";
+            }
+
+
             if (type === "Vehicle") {
                 armourInfo = "Armour: " + armour;
                 if (speed !== "Wheeled") {
@@ -471,7 +484,7 @@
             setAttrs({
                 "armourInfo": armourInfo,
                 "speedInfo": speedInfo,
-                "rank": rank,
+                "extraline": extraLine,
             }); 
         });
     });
