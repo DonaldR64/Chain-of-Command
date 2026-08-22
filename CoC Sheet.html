@@ -104,6 +104,7 @@
         <table>
             <thead>
                 <tr>
+                <th>Number</th>
                 <th>Name</th>
                 <th>Type</th>
                 <th>Firepower</th>
@@ -114,9 +115,10 @@
             </thead>
             <tbody>
                 <tr>
-                    <td><input type="text" name="attr_weaponname"></td>
+                    <td><input type="text" name="attr_weapon1number"></td>
+                    <td><input type="text" name="attr_weapon1name"></td>
                     <td>
-                        <select name="attr_weapontype">
+                        <select name="attr_weapon1type">
                             <option value="" selected disabled hidden>Choose Here</option>
                             <option value="Rifle">Rifle</option>
                             <option value="SMG">SMG</option>
@@ -130,27 +132,36 @@
                             <option value="Other">Other</option>
                         </select>
                     </td>
-                    <td><input type="text" name="attr_weaponfp"></td>
-                    <td><input type="text" name="attr_weaponclose"></td>
-                    <td><input type="text" name="attr_weaponeff"></td>
-                    <td><input type="text" name="attr_weaponnotes"></td>
+                    <td><input type="text" name="attr_weapon1fp"></td>
+                    <td><input type="text" name="attr_weapon1close"></td>
+                    <td><input type="text" name="attr_weapon1eff"></td>
+                    <td><input type="text" name="attr_weapon1notes"></td>
                 </tr>
                 <tr>
+                    <td><input type="text" name="attr_weapon2number"></td>
                     <td><input type="text" name="attr_weapon2name"></td>
                     <td>
                         <select name="attr_weapon2type">
                             <option value="" selected disabled hidden>Choose Here</option>
-                            <option value="Hull MG">Hull MG</option>
-                            <option value="Coaxial MG">Coaxial MG</option>
-                            <option value="Top Mounted MG">Top Mounted MG</option>
+                            <option value="Rifle">Rifle</option>
+                            <option value="SMG">SMG</option>
+                            <option value="Magazine LMG">Magazine LMG</option>
+                            <option value="Belt-Fed LMG">Belt-Fed LMG</option>
+                            <option value="Carbine">Carbine[Semi-Auto]</option>
+                            <option value="BAR">Browning Automatic Rifle</option>
+                            <option value="Assault Rifle">Assault Rifle</option>
+                            <option value="MMG/HMG">Tripod MMG/HMG</option>
+                            <option value="Pistol">Pistol</option>
+                            <option value="Other">Other</option>
                         </select>
-                    </td>                    
+                    </td>
                     <td><input type="text" name="attr_weapon2fp"></td>
                     <td><input type="text" name="attr_weapon2close"></td>
                     <td><input type="text" name="attr_weapon2eff"></td>
                     <td><input type="text" name="attr_weapon2notes"></td>
                 </tr>
                 <tr>
+                    <td>Blank</td>
                     <td><input type="text" name="attr_weapon3name"></td>
                     <td>
                         <select name="attr_weapon3type">
@@ -159,11 +170,27 @@
                             <option value="Coaxial MG">Coaxial MG</option>
                             <option value="Top Mounted MG">Top Mounted MG</option>
                         </select>
-                    </td> 
+                    </td>                    
                     <td><input type="text" name="attr_weapon3fp"></td>
                     <td><input type="text" name="attr_weapon3close"></td>
                     <td><input type="text" name="attr_weapon3eff"></td>
                     <td><input type="text" name="attr_weapon3notes"></td>
+                </tr>
+                <tr>
+                    <td>Blank</td>
+                    <td><input type="text" name="attr_weapon4name"></td>
+                    <td>
+                        <select name="attr_weapon4type">
+                            <option value="" selected disabled hidden>Choose Here</option>
+                            <option value="Hull MG">Hull MG</option>
+                            <option value="Coaxial MG">Coaxial MG</option>
+                            <option value="Top Mounted MG">Top Mounted MG</option>
+                        </select>
+                    </td> 
+                    <td><input type="text" name="attr_weapon4fp"></td>
+                    <td><input type="text" name="attr_weapon4close"></td>
+                    <td><input type="text" name="attr_weapon4eff"></td>
+                    <td><input type="text" name="attr_weapon4notes"></td>
                 </tr>
             </tbody>
         </table>    
@@ -286,15 +313,15 @@
                                 <span>Close</span>
                                 <span>Effective</span>
                                 <span>Notes</span>
-                                <h4><span name="attr_weapon2name"></span></h4>
-                                <h4><span name="attr_weapon2type"></span></h4>
-                                <h4><span name="attr_weapon2fp"></span></h4>
-                                <h4><span name="attr_weapon2close"></span></h4>
-                                <h4><span name="attr_weapon2eff"></span></h4>
-                                <h4><span name="attr_weapon2notes"></span></h4>
                                 <h4><span name="attr_weapon3name"></span></h4>
                                 <h4><span name="attr_weapon3type"></span></h4>
                                 <h4><span name="attr_weapon3fp"></span></h4>
+                                <h4><span name="attr_weapon3close"></span></h4>
+                                <h4><span name="attr_weapon3eff"></span></h4>
+                                <h4><span name="attr_weapon3notes"></span></h4>
+                                <h4><span name="attr_weapon4name"></span></h4>
+                                <h4><span name="attr_weapon4type"></span></h4>
+                                <h4><span name="attr_weapon4fp"></span></h4
                                 <h4><span name="attr_weapon3close"></span></h4>
                                 <h4><span name="attr_weapon3eff"></span></h4>
                                 <h4><span name="attr_weapon3notes"></span></h4>
@@ -304,18 +331,21 @@
                         <div class="weaponstwo">
                             <h4>Small Arms</h4>
                             <div class="weaponinfo2">
+                                <span>#</span>
                                 <span>Name</span>
                                 <span>Type</span>
                                 <span>Firepower</span>
                                 <span>Close</span>
                                 <span>Effective</span>
                                 <span>Notes</span>
-                                <h4><span name="attr_weaponname"></span></h4>
-                                <h4><span name="attr_weapontype"></span></h4>
-                                <h4><span name="attr_weaponfp"></span></h4>
-                                <h4><span name="attr_weaponclose"></span></h4>
-                                <h4><span name="attr_weaponeff"></span></h4>
-                                <h4><span name="attr_weaponnotes"></span></h4>
+                                <h4><span name="attr_weapon1number"></span></h4>
+
+                                <h4><span name="attr_weapon1name"></span></h4>
+                                <h4><span name="attr_weapon1type"></span></h4>
+                                <h4><span name="attr_weapon1fp"></span></h4>
+                                <h4><span name="attr_weapon1close"></span></h4>
+                                <h4><span name="attr_weapon1eff"></span></h4>
+                                <h4><span name="attr_weapon1notes"></span></h4>
                             </div>
                             <h4> </h4>
                             <h4>Anti-Tank Weapon</h4>
@@ -353,18 +383,27 @@
                         <div class="weaponsthree">
                             <h4>Small Arms</h4>
                             <div class="weaponinfo2">
+                                <span>#</span>
                                 <span>Name</span>
                                 <span>Type</span>
                                 <span>Firepower</span>
                                 <span>Close</span>
                                 <span>Effective</span>
                                 <span>Notes</span>
-                                <h4><span name="attr_weaponname"></span></h4>
-                                <h4><span name="attr_weapontype"></span></h4>
-                                <h4><span name="attr_weaponfp"></span></h4>
-                                <h4><span name="attr_weaponclose"></span></h4>
-                                <h4><span name="attr_weaponeff"></span></h4>
-                                <h4><span name="attr_weaponnotes"></span></h4>
+                                <h4><span name="attr_weapon1number"></span></h4>
+                                <h4><span name="attr_weapon1name"></span></h4>
+                                <h4><span name="attr_weapon1type"></span></h4>
+                                <h4><span name="attr_weapon1fp"></span></h4>
+                                <h4><span name="attr_weapon1close"></span></h4>
+                                <h4><span name="attr_weapon1eff"></span></h4>
+                                <h4><span name="attr_weapon1notes"></span></h4>
+                                <h4><span name="attr_weapon2number"></span></h4>
+                                <h4><span name="attr_weapon2name"></span></h4>
+                                <h4><span name="attr_weapon2type"></span></h4>
+                                <h4><span name="attr_weapon2fp"></span></h4>
+                                <h4><span name="attr_weapon2close"></span></h4>
+                                <h4><span name="attr_weapon2eff"></span></h4>
+                                <h4><span name="attr_weapon2notes"></span></h4>
                             </div>
                         </div>
                         <input type="hidden" name="attr_weapondisplay" class="toggleweapon" value="AT Weapon">
