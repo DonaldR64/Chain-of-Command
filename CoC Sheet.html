@@ -268,7 +268,8 @@
         <div class="attributes">
             <main>
                 <section class="header f-center">
-                    <h1><span name="attr_character_name"></span></h1>
+                    <h1><span name="attr_name1"></span></h1>
+                    <h2><span name="attr_name2"></span></h2>
                     <h3><span name="attr_compline"></span></h3>
                     <h3><span name="attr_special"></span></h3>
 
@@ -493,7 +494,7 @@
 
 
     on("change:armour change:type change:speed sheet:opened", function() {
-        getAttrs(["armour","type","speed","leadertype","rank","men","nation","quality"], function(values) {
+        getAttrs(["armour","type","speed","leadertype","rank","men","nation","quality","name"], function(values) {
             let type = values.type;
             let armour = values.armour;
             let armourInfo = "";
@@ -504,8 +505,10 @@
             let compLine = "";
             let numbers = ["One ","Two ","Three ","Four ","Five ","Six ","Seven ","Eight ","Nine ","Ten "];
 
-
-
+            let name = values.name || '';
+            name = name.split(",");
+            let name1 = name[0].trim();
+            let name2 = name[1].trim();
 
 
             if (type === "Leader") {
@@ -532,6 +535,8 @@
                 "armourInfo": armourInfo,
                 "speedInfo": speedInfo,
                 "compline": compLine,
+                "name1": name1,
+                "name2": name2,
             }); 
         });
     });
