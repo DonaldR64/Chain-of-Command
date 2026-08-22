@@ -38,15 +38,8 @@
             <h3>Attributes</h3>
             <label for="attr_leader">If Leader What Kind:</label>
             <select name="attr_leader">
-                <option value="Junior">Junior</option>
-                <option value="Senior">Senior</option>
-            </select>
-            <label for="attr_rank">Rank (US Equiv) if Leader:</label>
-            <select name="attr_rank">
-                <option value="Sergeant">Sergeant</option>
-                <option value="Staff Sergeant">Staff Sergeant</option>
-                <option value="Lieutenant">Lieutenant</option>
-                <option value="Captain">Captain</option>
+                <option value="Junior Leader">Junior</option>
+                <option value="Senior Leader">Senior</option>
             </select>
             <label for="attr_quality">Quality:</label>
             <select name="attr_quality">
@@ -512,9 +505,7 @@
             let extraLine = "";
 
             if (type === "Leader") {
-                let leader = values.leader;
-                let rank = values.rank;
-                extraLine = rank + " - " + leader
+                extraLine = values.leader;
             } else if (type === "Infantry Team") {
                 extraLine = values.men + " Men";
             }
