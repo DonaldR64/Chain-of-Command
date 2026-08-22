@@ -676,7 +676,7 @@ const Main = (() => {
         let id = msg.selected[0]._id;
         let team = TeamArray[id];  
         if (!team) {
-            team = new Unit(id);
+            team = new Team(id);
         }
         AddAbilities2(team)
     }
@@ -688,47 +688,6 @@ const Main = (() => {
         for(let a=0;a<abilArray.length;a++) {
             abilArray[a].remove();
         } 
-        //Weapons
-        let macros = {};
-        for (let w=0;w<team.weaponArray.length;w++) {
-            let weapon = team.weaponArray[w];
-            let type;
-            if (Projectiles.includes(weapon.type)) {
-                type = weapon.name + " " + weapon.type;
-                type = type.trim();
-            } else {
-                type = "Avail. " + weapon.type + "s";
-            }
-            if (macros[type]) {
-                macros[type].push(weapon.pos);
-            } else {
-                macros[type] = [weapon.pos];
-            }
-        }
-
-        let keys = Object.keys(macros);
-        for (let i=0;i<keys.length;i++) {
-            action = "!Fire;@{selected|token_id};@{target|token_id};";
-            action += macros[keys[i]].toString();
-            abilityName = (i+1) + ": Fire " + keys[i];
-            if (keys[i].includes("Photon")) {
-                action += ";" + "?{Mode|Single|Spread [3]}";
-            }
-            AddAbility(abilityName,action,team.charID);
-        }
-
-
-        if (Attribute(team.charID,"cloak",true) === "1") {
-            action = "!Orders;@{selected|token_id};Cloak/Decloak";
-            AddAbility("Cloak/Decloak",action,team.charID);
-        }
-
-        action = "!Warp;@{selected|token_id}";
-        AddAbility("Warp",action,team.charID);
-
-        action = "!CheckLOS;@{selected|token_id};@{target|token_id}";
-        AddAbility("Scan Unit",action,team.charID);
-
 
 
 
@@ -1016,7 +975,7 @@ const Main = (() => {
         tokens.forEach((token) => {
             let character = getObj("character", token.get("represents"));   
             if (character) {
-                let team = new Unit(token.get("id"));
+                let team = new Team(token.get("id"));
             }
         });
 
