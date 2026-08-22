@@ -502,11 +502,18 @@
             let special = values.special;
             let nation = values.nation;
             let compLine = "";
+            let numbers = ["One ","Two ","Three ","Four ","Five ","Six ","Seven ","Eight ","Nine ","Ten "];
+
+
+
+
 
             if (type === "Leader") {
                 compLine = values.quality + " " + values.leadertype;
             } else if (type === "Infantry Team") {
-                compLine = values.men + " " + values.quality + " Men";
+                let pos = Math.max(0,parseInt(values.men) - 1);
+                let number = numbers[pos];
+                compLine = number + values.quality + " Men";
             } else {
                 compLine = values.quality + " " + type;
             }
