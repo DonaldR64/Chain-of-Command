@@ -167,9 +167,9 @@ const Main = (() => {
     }
     
     const EdgeInfo = {
-        "#5b0f00": {name: "Wall",type: "Minor Obstacle", cover: 2, height: .2},        
-        "#274e13": {name: "Hedge",type: "Minor Obstacle", cover: 1, height: .2},   
-        "#00ff00": {name: "Bocage",type: "Major Obstacle", cover: 2, height: .5},  
+        "#5b0f00": {name: "Wall",type: "Minor", cover: 2, height: .2},        
+        "#274e13": {name: "Hedge",type: "Minor", cover: 1, height: .2},   
+        "#00ff00": {name: "Bocage",type: "Major", cover: 2, height: .5},  
     }
 
     //height is #
@@ -686,6 +686,7 @@ const Main = (() => {
             this.cube = offset.toCube();
             this.label = offset.label();
             this.elevation = 0;
+            this.hill = false;
             this.terrainHeight = 0;
             this.move = 0;
             this.soft = false;
@@ -1162,6 +1163,7 @@ const Main = (() => {
                 let labels = PolyHexes(vertices);
                 _.each(labels,label => {
                     HexMap[label].elevation = Math.max(HexMap[label].elevation,height);
+                    HexMap[label].hill = true;
                 })
             }
             let edge = EdgeInfo[path.get("stroke").toLowerCase()];
@@ -1472,9 +1474,19 @@ const Main = (() => {
             sendChat("","Selected Same Token");
             return;
         }
-        SetupCard(shooter.name,"Scan Target",shooter.nation);
+        SetupCard(shooter.name,"Line of Sight",shooter.nation);
 
         let losResult = LOS(shooter,target);
+        outputCard.body.push("Distance: " + losResult.distance * 30 + " feet");
+        outputCard.body.push("[hr]");
+        if (losResult.los === false) {
+            outputCard.body.push("No LOS due to " + losReason + " at " + blockedHexLabel);
+
+
+
+
+        }
+
     
         PrintCard();
     }
@@ -1484,12 +1496,22 @@ const Main = (() => {
 
 
     const LOS = (shooter,target) => {
+        let blockers = ["Infantry Team","Gun","Vehicle"];
         let notes = [];
         let shooterHex = HexMap[shooter.hexLabel];
         let targetHex = HexMap[target.hexLabel];
         let distance = shooter.Distance(target);
       
+        let shooterHeight = shooterHex.elevation;
+        let targetHeight = targetHex.elevation;
+
+        let pt1 = new Point(0,shooterHeight);
+        let pt2 = new Point(distance,targetHeight);
+        let pt3,pt4,line1;
+
         let finalLOS = true;
+        let interCoverFinal = 0;
+        let finalBlockedHexLabel;
         let hexCover = false;
         let finalLOSReason = "";
  
@@ -1498,23 +1520,90 @@ const Main = (() => {
 
         let len = labels[0].length;
         let los = [true,true];
+        let interCover = [0,0];
         let losReason = ["",""];
+        let blockedHexLabels = ["",""]
+
         for (let side=0;side<2;side++) {
+            let losLevel = 0;
+            let minorObs = 0;
             for (let i=0;i<len;i++) {
                 let interHex = HexMap[labels[side][i]];
-                if (interHex.terrain !== "Empty Space") {
-                    los[side] = false;
-                    losReason[side] = interHex.terrain;
-                    break;
+                //Hills
+                if (interHex.hill === true) {
+                    if (interHex.elevation > shooterHeight && interHex.elevation > targetHeight) {
+                        los[side] = false;
+                        losReason[side] = "Hill";
+                        blockedHexLabels[side] = interHex.label;
+                        break;
+                    }
                 }
+                //Intervening Units
+                if (interHex.tokenIDs.length > 0 && interHex.label !== targetHex.label) {
+                    let team2 = TeamArray[interHex.tokenIDs[0]];
+                    if (team2 && blockers.includes(team2.type)) {
+                        let h = .3
+                        pt3 = new Point(i+1,0);
+                        pt4 = new Point(i+1,(interHex.elevation + h));
+                        line1 = lineLine(pt1,pt2,pt3,pt4); //intersection
+                        if (line1) {
+                            los[side] = false;
+                            losReason[side] = team2.name;
+                            blockedHexLabels[side] = interHex.label;
+                            break;
+                        }
+                    }
+                }
+                //Blocking Terrain or Cover Terrain
+                pt3 = new Point(i+1,0);
+                pt4 = new Point(i+1,(interHex.elevation + interHex.terrainHeight));
+                line1 = lineLine(pt1,pt2,pt3,pt4); //intersection
+                if (line1) {
+                    losLevel += interHex.losLevel;
+                    if (losLevel > 1 && interHex.label !== targetHex.label) {
+                        los[side] = false;
+                        losReason[side] = "Terrain";
+                        blockedHexLabels[side] = interHex.label;
+                        break;
+                    }
+                    interCover[side] = Math.max(interCover[side],interHex.cover);
+                }
+                //edges
+                if (i > 1) {
+                    let dir = HexMap[labels[side][i-1]].cube.whatDirection(interHex.cube)
+                    let edge = HexMap[labels[side][i-1]].edges[dir];
+                    if (edge !== "Open") {
+                        let obstacle = EdgeInfo[edge];
+                        if (obstacle.type === "Minor") {
+                            minorObs++;
+                            if (minorObs > 3) {
+                                los[side] = false;
+                                losReason[side] = obstacle.name;
+                                blockedHexLabels[side] = interHex.label;
+                                break;
+                            }
+                            interCover[side] = Math.max(interCover[side],obstacle.cover);
+                        } else if (obstacle.type === "Major") {
+                            los[side] = false;
+                            losReason[side] = obstacle.name;
+                            blockedHexLabels[side] = interHex.label;
+                            break;
+                        }
+                    }
+                }
+
+
+
             }
         }
 
         if (los[0] === false && los[1] === false) {
             finalLOS = false;
             finalLOSReason = losReason[0];
+            finalBlockedHexLabel = blockedHexLabels[0];
             if (losReason[0] !== losReason[1]) {
                 finalLOSReason += " / " + losReason[1];
+                finalBlockedHexLabel += " / " + blockedHexLabel[1];
             }
             finalLOSReason = "Blocked by " + finalLOSReason;
         }
@@ -1528,13 +1617,23 @@ const Main = (() => {
             finalLOSReason = "Target is Offmap";
         }
 
+        if (los[0] === true && los[1] === true) {
+            interCoverFinal = Math.min(interCover[0],interCover[1]);
+        } else if (los[0] === false) {
+            interCoverFinal = interCover[1];
+        } else if (los[1] === false) {
+            interCoverFinal = interCover[0];
+        }
+
 
         let result = {
             los: finalLOS,
             losReason: finalLOSReason,
+            blockedHexLabel: finalBlockedHexLabel,
             distance: distance,
-            shooterArcs: shooter.Arcs(target),
-            targetArcs: target.Arcs(shooter),
+            cover: interCoverFinal,
+            //shooterArcs: shooter.Arcs(target),
+            //targetArcs: target.Arcs(shooter),
         }
 
         return result;
