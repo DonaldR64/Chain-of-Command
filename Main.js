@@ -1486,7 +1486,6 @@ const Main = (() => {
             outputCard.body.push("Target has" + coverLevel[losResult.cover] + "Cover");
         }
 
-    
         PrintCard();
     }
 
