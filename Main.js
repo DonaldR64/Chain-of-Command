@@ -74,6 +74,8 @@ const Main = (() => {
         }
     }
 
+
+
     let outputCard = {title: "",subtitle: "",side: "",body: [],buttons: [],};
 
     const Nations = {
@@ -105,8 +107,36 @@ const Main = (() => {
         },
     };
 
+    //cover: 0 = none, 1 = soft, 2 = hard, 3 = bunker
+    //move: 0 = open, 1 = broken, 2 = heavy going, 3 = impassable
+    //losLevel: 0 = no effect, 1 = lightly obstructs, 2 = fully obstructs => light means 2 hexes, full means only the edge hex
+    //height is X * 10 yards
+    //hills will be 10/20/30 yards
+    const TerrainInfo = {
+        "Ploughed Field": {name: "Ploughed Field",height: 0,losLevel:0,cover: 0,move: 1},
+        "Tall Crops": {name: "Tall Crops",move: 1, soft: false, cover: 1, coverNote: "None if Moving", losLevel: 1, height: 0.2},
+        "Orchard": {name: "Orchard",move: 1, soft: false, cover: 1, losLevel: 1,height: 1},
+        "Muddy Ground": {name: "Muddy Ground",move: 1, soft: true, cover: 0, losLevel: 0, height: 0},
+        "Woods": {name: "Woods",move: 2, soft: false, cover: 1, losLevel: 2, height: 2},
+        "Craters": {name: "Craters",move: 1, soft: false, cover: 1, losLevel: 0, height: 0},
+        "Wood Building": {name: "Wood Building",move: 1, soft: false, cover: 1, losLevel: 2, height: 1},
+        "Stone Building": {name: "Stone Building",move: 1, soft: false, cover: 2, losLevel: 2, height: 1},
+    }
+    
+    const ObstacleInfo = {
+        "Low Wall": {name: "Low Wall",type: "Minor Obstacle", cover: 1, height: 0},
+        "Low Hedge": {name: "Low Hedge",type: "Minor Obstacle", cover: 1, height: 0},
+        "Medium Wall": {name: "Medium Wall",type: "Medium Obstacle", cover: 2, height: .1},        
+        "Medium Hedge": {name: "Medium Hedge",type: "Medium Obstacle", cover: 1, height: .1},  
+        "High Wall": {name: "High Wall",type: "Major Obstacle", cover: 2, height: .33},  
+        "Bocage": {name: "Bocage",type: "Major Obstacle", cover: 2, height: .5},  
+    }
 
-
+    //height is #
+    const HillInfo = {
+        "#000000": {name: "Hill 1"},
+        "#980000": {name: "Hill 2"},
+    }
 
 
 
@@ -195,6 +225,83 @@ const Main = (() => {
         })
         return vertices;
     }
+
+    //convert a token to an object with vertices (corners) with final being the first (used for token in token check)
+    function tokenVertices(tok) {
+      let corners = []
+      let tokX = tok.get("left")
+      let tokY = tok.get("top")
+      let w = tok.get("width")
+      let h = tok.get("height")
+      let rot = tok.get("rotation") * (Math.PI/180)
+
+      //define the four corners of the target token as new points
+          //we will also rotate those corners appropirately around the target tok center
+      corners.push(RotatePoint(tokX, tokY, rot, new Point( tokX-w/2, tokY-h/2 )))     //Upper left
+      corners.push(RotatePoint(tokX, tokY, rot, new Point( tokX+w/2, tokY-h/2 )))     //Upper right
+      corners.push(RotatePoint(tokX, tokY, rot, new Point( tokX+w/2, tokY+h/2 )))     //Lower right
+      corners.push(RotatePoint(tokX, tokY, rot, new Point( tokX-w/2, tokY+h/2 )))     //Lower left
+      corners.push(RotatePoint(tokX, tokY, rot, new Point( tokX-w/2, tokY-h/2 )))     //Upper left
+
+      return corners
+    }
+
+
+    function GetAbsoluteControlPt(controlArray, center, w, h, rot, scaleX, scaleY) {
+        let len = controlArray.length;
+        let point = new pt(controlArray[len-2], controlArray[len-1]);
+        
+        //translate relative x,y to actual x,y 
+        point.x = scaleX*point.x + center.x - (scaleX * w/2);
+        point.y = scaleY*point.y + center.y - (scaleY * h/2);
+        
+        point = RotatePoint(center.x, center.y, rot, point);
+            
+        return point;
+    }
+
+    function DegreesToRadians(degrees) {
+        let pi = Math.PI;
+        return degrees * (pi/180);
+    }
+    
+    //cx, cy = coordinates of the center of rotation
+    //angle = clockwise rotation angle
+    //p = point object
+    function RotatePoint(cX,cY,angle, p) {
+        //cx, cy = coordinates of the center of rotation
+        //angle = clockwise rotation angle
+        //p = point object
+        let s = Math.sin(angle);
+        let c = Math.cos(angle);
+        
+        // translate point back to origin:
+        p.x -= cX;
+        p.y -= cY;
+        
+        // rotate point
+        let newX = p.x * c - p.y * s;
+        let newY = p.x * s + p.y * c;
+        
+        // translate point back:
+        p.x = Math.round(newX + cX);
+        p.y = Math.round(newY + cY);
+        return p;
+    }
+
+
+    const PolyHexes = (mapPoints) => {
+        //which hexes are in the polygon
+        let labels = [];
+        _.each(HexMap,hex => {
+            let check = pointInPolygon(hex.centre,mapPoints);
+            if (check === true) {
+                labels.push(hex.label);
+            }
+        })
+        return labels;
+    }
+
 
     //Retrieve Values from character Sheet Attributes
     const Attribute = (characterID,attributename,max = false) => {
@@ -538,14 +645,14 @@ const Main = (() => {
             this.tokenIDs = [];
             this.cube = offset.toCube();
             this.label = offset.label();
-            this.MP = 1;
-            this.vehicleMP = 1;
+            this.elevation = 0;
+            this.terrainHeight = 0;
+            this.move = 0;
+            this.soft = false;
             this.cover = 0;
-            this.blocksLOS = false;
-            this.impassableToInfantry = false;
-            this.impassabletoVehicles = false;
-
-
+            this.coverNote = "";
+            this.losLevel = 0;
+            this.hexSides = [];
 
 
             HexMap[this.label] = this;
@@ -939,7 +1046,7 @@ const Main = (() => {
                 halfToggleY = -halfToggleY;
             }
         }
-        //AddTerrain();    
+        AddTerrain();    
         AddTokens();
         DefineMap();
         let elapsed = Date.now()-startTime;
@@ -983,6 +1090,74 @@ const Main = (() => {
         log(`${c} token${s} checked in ${elapsed/1000} seconds - ` + Object.keys(TeamArray).length + " placed in Team Array");
 
     }
+
+
+    const AddTerrain = () => {
+        let start = Date.now();
+        //hills defined by lines
+        let paths = findObjs({_pageid: Campaign().get("playerpageid"),_type: "pathv2",layer: "map",});
+        _.each(paths,path => {
+            let colour = path.get("stroke").toLowerCase();
+            let hill = HillInfo[colour];
+            if (hill) {
+                let height = parseInt(hill.name.replace(/[^\d]/g,""));
+                let vertices = translatePoly(path);
+                let labels = PolyHexes(vertices);
+                _.each(labels,label => {
+                    HexMap[label].elevation = Math.max(HexMap[label].elevation,height);
+                })
+            }
+        });
+        //Add Token Terrain, Building might be multihex
+        let tokens = findObjs({_pageid: Campaign().get("playerpageid"),_type: "graphic",_subtype: "token",layer: "map",});
+        _.each(tokens,token => {
+            let name = token.get("name") || " ";
+            if (name.includes("Map")) {
+                return;
+            }
+            name = name.split("//")[0].trim();
+            let terrain = TerrainInfo[name];
+            if (terrain) {
+                let labels = [];
+                if (token.get("width") > 250 || token.get("height") > 210) {
+                    let vertices = tokenVertices(token);
+                    labels = PolyHexes(vertices);
+log(labels)
+
+                } else {
+                    let centre = new Point(token.get("left"),token.get('top'));
+                    labels = [centre.toCube().label()];
+                }
+                _.each(labels,label => {
+                    let hex = HexMap[label];
+                    if (hex) {
+                        if (hex.terrain === "Open") {
+                            hex.terrain = terrain.name;
+                        }
+                        hex.terrainHeight = terrain.height;
+                        hex.losLevel = terrain.losLevel;
+                        hex.cover = terrain.cover;
+                        hex.move = terrain.move;
+                        hex.coverNote = terrain.coverNote || "";
+                        hex.soft = terrain.soft;
+                    }
+                })
+            }    
+        });
+
+
+
+
+
+
+        let elapsed = Date.now()-start;
+        log(`Terrain added in ${elapsed/1000} seconds`);
+
+    }
+
+
+
+
 
     const stringGen = () => {
         let text = "";
@@ -1077,8 +1252,9 @@ const Main = (() => {
         if (team.Offmap()) {
             outputCard.body.push("Team is Off Map");
         }
-
-
+        outputCard.body.push("Elevation: " + (hex.elevation * 30) + " feet");
+        outputCard.body.push("Terrain: " + hex.terrain);
+        outputCard.body.push("Terrain Height: " + (hex.terrainHeight * 30) + " feet");
         PrintCard();
     }
 
@@ -1360,7 +1536,7 @@ const Main = (() => {
         on('destroy:graphic',destroyGraphic);
     };
     on('ready', () => {
-        log("===>Chain of Command 2<===");
+        log("===> Chain of Command 2 <===");
         log("===> Software Version: " + version + " <===")
         LoadPage();
         DefineHexInfo();
