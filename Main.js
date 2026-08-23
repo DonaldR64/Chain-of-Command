@@ -748,17 +748,24 @@ const Main = (() => {
             this.maxHP = parseInt(aa.men) || "";
             this.quality = aa.quality;
             this.leaderType = aa.leadertype || "None";
+            let maxShock = 0;
 
+            this.special = aa.special;
             this.speed = aa.speed || "Foot";
             this.armourType = aa.armourtype || "None";
-
-
+            this.bar2 = "";
             if (this.type === "Leader") {
-                this.bar2 = this.leaderType === "Senior" ? 3:2;
-                this.maxHP = this.bar2;
-            } 
-
-
+                this.maxHP = "";
+                this.bar2 = (this.leaderType === "Senior") ? 3:2;
+                maxShock = "";
+            }
+            if (this.maxHP !== "") {
+                maxShock = 2 * this.maxHP;
+            }
+            if (this.type === "Vehicle") {
+                maxShock = 4;
+            }
+            this.maxShock = maxShock;
 
 
 
@@ -1612,6 +1619,8 @@ const Main = (() => {
                     name += " " + surname;
                 }
 
+                let shock = (team.type === "Leader") ? "":0;
+
                 let ds = team.type === "Leader" ? true:false;
                 let bar2 = team.type === "Leader" ? team.bar2:"";
                 team.token.set({
@@ -1620,9 +1629,11 @@ const Main = (() => {
                     bar1_max: team.maxHP,
                     showplayers_bar1: true,
                     bar2_value: bar2,
+                    bar2_max: bar2,
                     showplayers_bar2: true,
-                    bar3_value: 0,
-                    bar3_max: (2 * team.maxHP),
+                    bar3_value: shock,
+                    bar3_max: team.maxShock,
+                    showplayers_bar3: true,
                     bar_location: "overlap_bottom",
                     compact_bar: "compact",
                     aura1_color: "#00ff00",
