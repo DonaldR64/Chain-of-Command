@@ -124,18 +124,15 @@ const Main = (() => {
     }
     
     const EdgeInfo = {
-        "Low Wall": {name: "Low Wall",type: "Minor Obstacle", cover: 1, height: 0},
-        "Low Hedge": {name: "Low Hedge",type: "Minor Obstacle", cover: 1, height: 0},
-        "Medium Wall": {name: "Medium Wall",type: "Medium Obstacle", cover: 2, height: .1},        
-        "Medium Hedge": {name: "Medium Hedge",type: "Medium Obstacle", cover: 1, height: .1},  
-        "High Wall": {name: "High Wall",type: "Major Obstacle", cover: 2, height: .33},  
-        "Bocage": {name: "Bocage",type: "Major Obstacle", cover: 2, height: .5},  
+        "#5b0f00": {name: "Wall",type: "Medium Obstacle", cover: 2, height: .2},        
+        "#274e13": {name: "Hedge",type: "Medium Obstacle", cover: 1, height: .2},   
+        "#00ff00": {name: "Bocage",type: "Major Obstacle", cover: 2, height: .5},  
     }
 
     //height is #
     const HillInfo = {
         "#000000": {name: "Hill 1"},
-        "#980000": {name: "Hill 2"},
+        "#666666": {name: "Hill 2"},
     }
 
 
