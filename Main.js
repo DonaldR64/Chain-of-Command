@@ -845,26 +845,15 @@ const Main = (() => {
         if (newObj) {return newObj.id};
     }    
 
-
-    const AddAbilities = (msg) => {
-        if (!msg.selected) {return};
-        let id = msg.selected[0]._id;
-        let team = TeamArray[id];  
-        if (!team) {
-            team = new Team(id);
-        }
-        AddAbilities2(team)
-    }
-        
-    const AddAbilities2 = (team) => {
+    const AddAbilities = (team) => {
         let abilityName,action;
         let abilArray = findObjs({_type: "ability", _characterid: team.charID});
         //clear old abilities
         for(let a=0;a<abilArray.length;a++) {
             abilArray[a].remove();
         } 
-
-
+        AddAbility("Info","!TokenInfo",team.charID);
+        AddAbility("LOS","!CheckLOS;@{selected|token_id};@{target|token_id}",team.charID);
 
 
 
@@ -1653,6 +1642,7 @@ const Main = (() => {
                     team.token.set("status_" + sectionMarker,true);
                 }
                 state.CoC2.sectionIDs[team.id] = sectionID;
+                AddAbilities(team);
             }
             if (sectionMarker !== "None") {
                 sectionMarkers[refTeam.player]++;
