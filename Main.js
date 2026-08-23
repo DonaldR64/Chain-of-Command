@@ -748,6 +748,7 @@ const Main = (() => {
             this.maxHP = parseInt(aa.men) || "";
             this.quality = aa.quality;
             this.leaderType = aa.leadertype || "None";
+
             this.speed = aa.speed || "Foot";
             this.armourType = aa.armourtype || "None";
 

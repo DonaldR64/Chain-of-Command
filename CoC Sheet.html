@@ -504,7 +504,7 @@
             let name2 = name[1].trim();
             
             if (type === "Leader") {
-                compLine = values.quality + " " + values.leadertype;
+                compLine = values.quality + " " + values.leadertype + " Leader";
             } else if (type === "Infantry Team") {
                 let pos = Math.max(0,parseInt(values.men) - 1);
                 let number = numbers[pos];
