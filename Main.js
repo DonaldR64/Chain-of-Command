@@ -1122,8 +1122,6 @@ const Main = (() => {
                 if (token.get("width") > 250 || token.get("height") > 210) {
                     let vertices = tokenVertices(token);
                     labels = PolyHexes(vertices);
-log(labels)
-
                 } else {
                     let centre = new Point(token.get("left"),token.get('top'));
                     labels = [centre.toCube().label()];
@@ -1144,6 +1142,9 @@ log(labels)
                 })
             }    
         });
+        //Add Edges
+        
+
 
 
 
