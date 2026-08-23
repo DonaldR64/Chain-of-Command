@@ -123,7 +123,7 @@ const Main = (() => {
         "Stone Building": {name: "Stone Building",move: 1, soft: false, cover: 2, losLevel: 2, height: 1},
     }
     
-    const ObstacleInfo = {
+    const EdgeInfo = {
         "Low Wall": {name: "Low Wall",type: "Minor Obstacle", cover: 1, height: 0},
         "Low Hedge": {name: "Low Hedge",type: "Minor Obstacle", cover: 1, height: 0},
         "Medium Wall": {name: "Medium Wall",type: "Medium Obstacle", cover: 2, height: .1},        
@@ -652,8 +652,10 @@ const Main = (() => {
             this.cover = 0;
             this.coverNote = "";
             this.losLevel = 0;
-            this.hexSides = [];
-
+            this.edges = {};
+            _.each(DIRECTIONS,a => {
+                this.edges[a] = "Open";
+            });
 
             HexMap[this.label] = this;
         }
@@ -1094,7 +1096,7 @@ const Main = (() => {
 
     const AddTerrain = () => {
         let start = Date.now();
-        //hills defined by lines
+        //hills defined by lines, hedges and walls same
         let paths = findObjs({_pageid: Campaign().get("playerpageid"),_type: "pathv2",layer: "map",});
         _.each(paths,path => {
             let colour = path.get("stroke").toLowerCase();
@@ -1107,6 +1109,39 @@ const Main = (() => {
                     HexMap[label].elevation = Math.max(HexMap[label].elevation,height);
                 })
             }
+            let edge = EdgeInfo[path.get("stroke").toLowerCase()];
+            if (edge) {
+                let vertices = translatePoly(path);
+                //work through pairs of vertices
+                for (let i=0;i<(vertices.length -1);i++) {
+                    let pt1 = vertices[i];
+                    let pt2 = vertices[i+1];
+                    let midPt = new Point((pt1.x + pt2.x)/2,(pt1.y + pt2.y)/2);
+                    //find nearest hex to midPt
+                    let hexLabel = midPt.label();
+                    //now run through that hexes neighbours and see what intersects with original line to identify the 2 neighbouring hexes
+                    let hex1 = HexMap[hexLabel];
+                    if (!hex1) {continue}
+                    let pt3 = hex1.centre;
+                    let neighbourCubes = hex1.cube.neighbours();
+                    for (let j=0;j<neighbourCubes.length;j++) {
+                        let k = j+3;
+                        if (k> 5) {k-=6};
+                        let hl2 = neighbourCubes[j].label();
+                        let hex2 = HexMap[hl2];
+                        if (!hex2) {continue}
+                        let pt4 = hex2.centre;
+                        let intersect = lineLine(pt1,pt2,pt3,pt4);
+                        if (intersect) {
+                            hex1.edges[DIRECTIONS[j]] = edge;
+                            hex2.edges[DIRECTIONS[k]] = edge;
+                        }
+                    }
+                }
+            }
+
+
+
         });
         //Add Token Terrain, Building might be multihex
         let tokens = findObjs({_pageid: Campaign().get("playerpageid"),_type: "graphic",_subtype: "token",layer: "map",});
@@ -1142,7 +1177,6 @@ const Main = (() => {
                 })
             }    
         });
-        //Add Edges
         
 
 
