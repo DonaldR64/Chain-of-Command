@@ -742,12 +742,20 @@ const Main = (() => {
             this.core = (aa.core === "1") ? true:false;
             this.maxHP = parseInt(aa.men) || 1;
 //adjust for armour ???, and eladers have 2 ?
-
-
             this.quality = aa.quality;
             this.leaderType = aa.leadertype || "None";
             this.speed = aa.speed || "Foot";
             this.armourType = aa.armourtype || "None";
+
+
+            if (this.type === "Leader") {
+                this.bar2 = this.leaderType === "Senior" ? 3:2;
+            } 
+
+
+
+
+
 
             this.sectionID = state.CoC2.sectionIDs[id] || "None";
             this.sectionMarker = "";
@@ -1540,79 +1548,102 @@ const Main = (() => {
     }
 
     const SetArmies = () => {
-        let tokens = findObjs({_type: "graphic",_subtype: "token",layer: "objects"});
+        let tokens = findObjs({
+            _pageid: Campaign().get("playerpageid"),
+            _type: "graphic",
+            _subtype: "token",
+            layer: "objects",
+        });
+        
         let sectionMarkers = [0,0];
-
-
-        _.each(tokens,token => {
+        
+        let groups = [];
+        //sort tokens into groups
+        tokenLoop:
+        for (let i=0;i<tokens.length;i++) {
+            let token = tokens[i];
             let character = getObj("character", token.get("represents"));   
-            if (character) {
-                let team = new Team(token.get("id"));
-                //check for nearby tokens, if so, this is a section, check if section already created, if not create, if is, can note sectionID in state
-                if (team.player < 2) {
-                    let hex = HexMap[team.hexLabel];
-                    let neighbours = hex.cube.neighbours();
-                    let others = [];
-                    let sectionID,sectionMarker;
-                    let sectionFlag = false;
-                    let neighbours = false;
-                    for (let i=0;i<neighbours.length;i++) {
-                        let hex2 = HexMap[neighbours[i].label()];
-                        if (hex2 && hex2.tokenIDs.length > 0) {
-                            neighbours = true;
-                            for (let j=0;j<hex2.tokenIDs.length;j++) {
-                                let team2 = TeamArray[hex2.tokenIDs[j]];
-                                if (team2) {
-                                    sectionID = team2.sectionID;
-                                    sectionMarker = team2.sectionMarker;
-                                    sectionFlag = true;
-                                }
-                            }
+            if (!character) {continue};
+            let team = new Team(token.get("id"));
+            for (let j=0;j<groups.length;j++) {
+                if (groups[j].includes(team.id)) {
+                    continue tokenLoop;
+                }
+            }
+            let group = [team.id];
+            if (team.player < 2) {
+                let hex = HexMap[team.hexLabel];
+                let neighbourCubes = hex.cube.neighbours();
+                _.each(neighbourCubes, cube => {
+                    let hex2 = HexMap[cube.label()];
+                    if (hex2) {
+                        for (let k=0;k<hex2.tokenIDs.length;k++) {
+                            let team2 = new Team(hex2.tokenIDs[k]);
+                            group.push(team2.id);
                         }
                     }
-                    if (sectionFlag === false && neighbours === true) {
-                        sectionID = stringGen();
-                        sectionMarker = Nations[team.nation].teammarkers[sectionMarkers[team.player]];
-                        sectionMarkers[team.player]++;
-                        team.sectionMarker = sectionMarker;
-                        state.CoC2.sectionIDs[team.id] = sectionID;
-                    }
-
-                    //naming
-                    //reset some token stuff like bubbles, aura, etc
-                    let ds = team.type === "Leader" ? true:false;
-
-                    team.token.set({
-                        "aura1_color": "#00ff00",
-                        "disableSnapping": ds,
-                        "bar1_value": team.maxHP,
-                        "bar1_max": team.maxHP,
-                        
-
-
-
-
-                    })
-
-
-
-
-
-
-                }
-
+                })
             }
-
-
-
-
-        })
+            groups.push(group);
+        }
+        
+        for (let i=0;i<groups.length;i++) {
+            let group = groups[i];
+            let sectionID = "None";
+            let sectionMarker = "None";
+            let refTeam = TeamArray[group[0]];
+            if (group.length > 1 && refTeam.player < 2) {
+                sectionID = stringGen();
+                let sectionMarker = Nations[refTeam.nation].teammarkers[refTeam.player];
+log("SM")
+log(sectionMarker)
+            };
+            for (let j=0;j<group.length;j++) {
+                let team = TeamArray[group[j]];
+                //naming
+                //reset some token stuff like bubbles, aura, etc
+                let ds = team.type === "Leader" ? true:false;
+                let bar2 = team.type === "Leader" ? team.bar2:"";
+                team.token.set({
+                    bar1_value: team.maxHP,
+                    bar1_max: team.maxHP,
+                    showplayers_bar1: true,
+                    bar2_value: bar2,
+                    showplayers_bar2: true,
+                    bar3_value: 0,
+                    bar3_max: (2 * team.maxHP),
+                    bar_location: "overlap_bottom",
+                    compact_bar: "compact",
+                    aura1_color: "#00ff00",
+                    aura1_radius: 0.1,
+                    aura2_color: "transparent",
+                    showplayers_aura1: true,
+                    tooltip: "",
+                    show_tooltip: true,
+                    showplayers_tooltip: true,
+                    showplayers_name: true,
+                    statusmarkers: "",
+                    tint_color: "transparent",
+                    disableSnapping: ds,
+                })
+                team.sectionID = sectionID;
+                if (sectionMarker !== "None") {
+                    team.token.set("status_" + sectionMarker,true);
+                }
+                state.CoC2.sectionIDs[team.id] = sectionID;
+            }
+            if (sectionMarker !== "None") {
+                sectionMarkers[team.player]++;
+            }
+        }
 
 
 
 
 
     }
+
+
 
 
 
