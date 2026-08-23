@@ -167,8 +167,8 @@ const Main = (() => {
     }
     
     const EdgeInfo = {
-        "#5b0f00": {name: "Wall",type: "Medium Obstacle", cover: 2, height: .2},        
-        "#274e13": {name: "Hedge",type: "Medium Obstacle", cover: 1, height: .2},   
+        "#5b0f00": {name: "Wall",type: "Minor Obstacle", cover: 2, height: .2},        
+        "#274e13": {name: "Hedge",type: "Minor Obstacle", cover: 1, height: .2},   
         "#00ff00": {name: "Bocage",type: "Major Obstacle", cover: 2, height: .5},  
     }
 
