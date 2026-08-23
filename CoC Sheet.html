@@ -33,6 +33,9 @@
                 <option value="UK">United Kingdom</option>
                 <option value="Neutral">Neutral</option>
             </select>
+
+
+
         </div>
         <div class="col">
             <h3>Attributes</h3>
@@ -50,7 +53,7 @@
             </select>
 
             <label># of Men if Team:</label><input type="text" name="attr_men">
-
+            <label>Core Unit?:</label><input type="checkbox" name="attr_core" value="1">
             <label>Special Abilities:</label><input type="text" name="attr_special">
 
 
@@ -269,6 +272,8 @@
                     <h1><span name="attr_name1"></span></h1>
                     <h2><span name="attr_name2"></span></h2>
                     <h3><span name="attr_compline"></span></h3>
+                    <h3><span name="attr_coredisplay"></span></h3>
+                    <hr>
                     <h3><span name="attr_special"></span></h3>
 
                 </section>
@@ -479,7 +484,7 @@
 
 
     on("change:armour change:type change:speed sheet:opened", function() {
-        getAttrs(["armour","type","speed","leadertype","rank","men","nation","quality","character_name"], function(values) {
+        getAttrs(["armour","type","speed","leadertype","rank","men","nation","quality","character_name","core"], function(values) {
             let type = values.type;
             let armour = values.armour;
             let armourInfo = "";
@@ -489,6 +494,9 @@
             let nation = values.nation;
             let compLine = "";
             let numbers = ["One ","Two ","Three ","Four ","Five ","Six ","Seven ","Eight ","Nine ","Ten "];
+
+            let coreDisplay = (values.core === "1") ? "Core Unit":"Support Unit";
+        
 
             let name = values.character_name || '';
             name = name.split(",");
@@ -521,6 +529,7 @@
                 "compline": compLine,
                 "name1": name1,
                 "name2": name2,
+                "coredisplay": coreDisplay,
             }); 
         });
     });
