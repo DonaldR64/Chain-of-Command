@@ -1594,7 +1594,7 @@ const Main = (() => {
             let refTeam = TeamArray[group[0]];
             if (group.length > 1 && refTeam.player < 2) {
                 sectionID = stringGen();
-                let sectionMarker = Nations[refTeam.nation].teammarkers[refTeam.player];
+                sectionMarker = Nations[refTeam.nation].teammarkers[refTeam.player];
 log("SM")
 log(sectionMarker)
             };
@@ -1628,12 +1628,13 @@ log(sectionMarker)
                 })
                 team.sectionID = sectionID;
                 if (sectionMarker !== "None") {
+
                     team.token.set("status_" + sectionMarker,true);
                 }
                 state.CoC2.sectionIDs[team.id] = sectionID;
             }
             if (sectionMarker !== "None") {
-                sectionMarkers[team.player]++;
+                sectionMarkers[refTeam.player]++;
             }
         }
 
