@@ -1480,11 +1480,10 @@ const Main = (() => {
         outputCard.body.push("Distance: " + losResult.distance * 30 + " feet");
         outputCard.body.push("[hr]");
         if (losResult.los === false) {
-            outputCard.body.push("No LOS due to " + losReason + " at " + blockedHexLabel);
-
-
-
-
+            outputCard.body.push("No LOS due to " + losResult.losReason + " at " + losResult.blockedHexLabel);
+        } else {
+            coverLevel = [" No "," Soft "," Hard "," Bunker "];
+            outputCard.body.push("Target has" + coverLevel[losResult.cover] + "Cover");
         }
 
     
