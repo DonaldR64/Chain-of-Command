@@ -1130,8 +1130,8 @@ const Main = (() => {
                         let pt4 = hex2.centre;
                         let intersect = lineLine(pt1,pt2,pt3,pt4);
                         if (intersect) {
-                            hex1.edges[DIRECTIONS[j]] = edge;
-                            hex2.edges[DIRECTIONS[k]] = edge;
+                            hex1.edges[DIRECTIONS[j]] = path.get("stroke").toLowerCase();
+                            hex2.edges[DIRECTIONS[k]] = path.get("stroke").toLowerCase();
                         }
                     }
                 }
@@ -1287,6 +1287,12 @@ const Main = (() => {
         outputCard.body.push("Elevation: " + (hex.elevation * 30) + " feet");
         outputCard.body.push("Terrain: " + hex.terrain);
         outputCard.body.push("Terrain Height: " + (hex.terrainHeight * 30) + " feet");
+        _.each(DIRECTIONS,a => {
+            if (hex.edges[a] !== "Open") {
+                outputCard.body.push(a + " Edge: " + EdgeInfo[hex.edges[a]].name);
+            }
+        })
+
         PrintCard();
     }
 
