@@ -8,7 +8,12 @@ const Main = (() => {
     let HexSize, HexInfo, DIRECTIONS;
     let MapInfo = {};
     let TeamArray = {};
-    let SectionArray = {};
+    let SurnameList = {
+        Germany: ["Schmidt","Schneider","Fischer","Weber","Meyer","Wagner","Becker","Schulz","Hoffmann","Bauer","Richter","Klein","Wolf","Schroder","Neumann","Schwarz","Braun","Hofmann","Werner","Krause","Konig","Lang","Vogel","Frank","Beck"],
+        Soviet: ["Ivanov","Smirnov","Petrov","Sidorov","Popov","Vassiliev","Sokolov","Novikov","Volkov","Alekseev","Lebedev","Pavlov","Kozlov","Orlov","Makarov","Nikitin","Zaitsev","Golubev","Tarasov","Ilyin","Gusev","Titov","Kuzmin","Kiselyov","Belov"],
+        USA: ["Smith","Johnson","Williams","Brown","Jones","Wright","Miller","Davis","Wilson","Anderson","Thomas","Taylor","Moore","Jackson","Martin","Lee","Thompson","White","Harris","Clark","Lewis","Robinson","Walker","Young","Allen"],
+        UK: ["Smith","Jones","Williams","Taylor","Davies","Brown","Wilson","Evans","Thomas","Johnson","Roberts","Walker","Wright","Robinson","Thompson","White","Hughes","Edwards","Green","Lewis","Wood","Harris","Martin","Jackson","Clarke"],
+    }
 
     //math constants
     const M = {
@@ -740,8 +745,7 @@ const Main = (() => {
             this.token = token;
             this.type = aa.type;
             this.core = (aa.core === "1") ? true:false;
-            this.maxHP = parseInt(aa.men) || 1;
-//adjust for armour ???, and eladers have 2 ?
+            this.maxHP = parseInt(aa.men) || "";
             this.quality = aa.quality;
             this.leaderType = aa.leadertype || "None";
             this.speed = aa.speed || "Foot";
@@ -750,6 +754,7 @@ const Main = (() => {
 
             if (this.type === "Leader") {
                 this.bar2 = this.leaderType === "Senior" ? 3:2;
+                this.maxHP = this.bar2;
             } 
 
 
@@ -758,10 +763,7 @@ const Main = (() => {
 
 
             this.sectionID = state.CoC2.sectionIDs[id] || "None";
-            this.sectionMarker = "";
-            
-            
-            
+                        
             TeamArray[id] = this;
             let index = HexMap[label].tokenIDs.indexOf(id);
             if (index < 0) {
@@ -1436,6 +1438,8 @@ const Main = (() => {
 
 
 
+
+
     //line line collision where line1 is pt1 and 2, line2 is pt 3 and 4
     const lineLine = (pt1,pt2,pt3,pt4) => {
         //calculate the direction of the lines
@@ -1477,6 +1481,7 @@ const Main = (() => {
     
         PrintCard();
     }
+
 
 
 
@@ -1556,7 +1561,8 @@ const Main = (() => {
         });
         
         let sectionMarkers = [0,0];
-        
+        let Surnames = DeepCopy(SurnameList);
+
         let groups = [];
         //sort tokens into groups
         tokenLoop:
@@ -1595,16 +1601,20 @@ const Main = (() => {
             if (group.length > 1 && refTeam.player < 2) {
                 sectionID = stringGen();
                 sectionMarker = Nations[refTeam.nation].teammarkers[refTeam.player];
-log("SM")
-log(sectionMarker)
             };
             for (let j=0;j<group.length;j++) {
                 let team = TeamArray[group[j]];
-                //naming
-                //reset some token stuff like bubbles, aura, etc
+                let name = team.charName.split(",")[0].trim();
+                if (team.type === "Leader") {
+                    let index = randomInteger(Surnames[team.nation].length) - 1;
+                    let surname = Surnames[team.nation].splice(index,1);
+                    name += " " + surname;
+                }
+
                 let ds = team.type === "Leader" ? true:false;
                 let bar2 = team.type === "Leader" ? team.bar2:"";
                 team.token.set({
+                    name: name,
                     bar1_value: team.maxHP,
                     bar1_max: team.maxHP,
                     showplayers_bar1: true,
@@ -1628,7 +1638,6 @@ log(sectionMarker)
                 })
                 team.sectionID = sectionID;
                 if (sectionMarker !== "None") {
-
                     team.token.set("status_" + sectionMarker,true);
                 }
                 state.CoC2.sectionIDs[team.id] = sectionID;
