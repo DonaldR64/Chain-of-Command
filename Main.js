@@ -74,37 +74,75 @@ const Main = (() => {
         }
     }
 
+    const Axis = ["Germany","Italy","Japan"];
+    const Allies = ["Soviet","USA","UK","Canada"];
+    const CharacterCountries = ["Soviet ","US ", "German ","UK "];
 
 
     let outputCard = {title: "",subtitle: "",side: "",body: [],buttons: [],};
 
     const Nations = {
+        "Soviet": {
+            "image": "https://s3.amazonaws.com/files.d20.io/images/304547168/fMk9mH9WMsr8VSQFg6AZew/thumb.png?1663171370",
+            "dice": "Soviet",
+            "backgroundColour": "#FFFF00",
+            "titlefont": "Anton",
+            "fontColour": "#000000",
+            "borderColour": "#FF0000",
+            "borderStyle": "5px ridge",
+            "overwatch": "-N_aLWelhXtAj2-HmbhX",
+            "covering": "-N_aLMELJpCFCSdc38-r",
+            "teammarkers": ["letters_and_numbers0099::4815235","letters_and_numbers0100::4815236","letters_and_numbers0101::4815237","letters_and_numbers0102::4815238","letters_and_numbers0103::4815239","letters_and_numbers0104::4815240","letters_and_numbers0105::4815241","letters_and_numbers0106::4815242","letters_and_numbers0107::4815243","letters_and_numbers0108::4815244"],       
+        },
+        "Germany": {
+            "image": "https://s3.amazonaws.com/files.d20.io/images/329415788/ypEgv2eFi-BKX3YK6q_uOQ/thumb.png?1677173028",
+            "dice": "Germany",
+            "backgroundColour": "#000000",
+            "titlefont": "Bokor",
+            "fontColour": "#FFFFFF",
+            "borderColour": "#000000",
+            "borderStyle": "5px double",
+            "overwatch": "-N_aLRXvf68lFjYj5V3V",
+            "covering": "-N_aLD7-Jrij3WlVHaUl",
+            "teammarkers": ["letters_and_numbers0197::4815333","letters_and_numbers0198::4815334","letters_and_numbers0199::4815335","letters_and_numbers0200::4815336","letters_and_numbers0201::4815337","letters_and_numbers0202::4815338","letters_and_numbers0203::4815339","letters_and_numbers0204::4815340","letters_and_numbers0205::4815341","letters_and_numbers0206::4815342"],   
+        },
+        "UK": {
+            "image": "https://s3.amazonaws.com/files.d20.io/images/330506939/YtTgDTM3q7p8m0fJ4-E13A/thumb.png?1677713592",
+            "backgroundColour": "#0E2A7A",
+            "dice": "UK",
+            "titlefont": "Merriweather",
+            "fontColour": "#FFFFFF",
+            "borderColour": "#BC2D2F",
+            "borderStyle": "5px groove",
+            "overwatch": "",
+            "covering": "",
+            "teammarkers": ["letters_and_numbers0148::4815284","letters_and_numbers0149::4815285","letters_and_numbers0150::4815286","letters_and_numbers0151::4815287","letters_and_numbers0152::4815288","letters_and_numbers0153::4815289","letters_and_numbers0154::4815290","letters_and_numbers0155::4815291","letters_and_numbers0156::4815292","letters_and_numbers0157::4815293"],
+        },
+        "USA": {
+            "image": "https://s3.amazonaws.com/files.d20.io/images/327595663/Nwyhbv22KB4_xvwYEbL3PQ/thumb.png?1676165491",
+            "backgroundColour": "#FFFFFF",
+            "dice": "USA",
+            "titlefont": "Arial",
+            "fontColour": "#006400",
+            "borderColour": "#006400",
+            "borderStyle": "5px double",
+            "overwatch": "",
+            "covering": "",
+            "teammarkers": ["letters_and_numbers0050::4815186","letters_and_numbers0051::4815187","letters_and_numbers0052::4815188","letters_and_numbers0053::4815189","letters_and_numbers0054::4815190","letters_and_numbers0055::4815191","letters_and_numbers0056::4815192","letters_and_numbers0057::4815193","letters_and_numbers0058::4815194","letters_and_numbers0059::4815195"],
+        },
+
+
+
         "Neutral": {
             "image": "",
-            "dice": "Neutral",
             "backgroundColour": "#FFFFFF",
             "titlefont": "Arial",
             "fontColour": "#000000",
             "borderColour": "#00FF00",
             "borderStyle": "5px ridge",
-            "objColour": "#ffffff",
+            "dice": "UK",
         },
-        "Germany": {
-            "dice": "German",
-            "backgroundColour": "#000000",
-            "titlefont": "Anton",
-            "fontColour": "#ffffff",
-            "borderColour": "#000000",
-            "borderStyle": "5px ridge",
-        },
-        "USA": {
-            "dice": "USA",
-            "backgroundColour": "#4B5320",
-            "titlefont": "Arial",
-            "fontColour": "#ffffff",
-            "borderColour": "#4B5320",
-            "borderStyle": "5px ridge",  
-        },
+
     };
 
     //cover: 0 = none, 1 = soft, 2 = hard, 3 = bunker
@@ -701,8 +739,21 @@ const Main = (() => {
             this.player = player;
             this.token = token;
             this.type = aa.type;
-           
+            this.core = (aa.core === "1") ? true:false;
+            this.maxHP = parseInt(aa.men) || 1;
+//adjust for armour ???, and eladers have 2 ?
 
+
+            this.quality = aa.quality;
+            this.leaderType = aa.leadertype || "None";
+            this.speed = aa.speed || "Foot";
+            this.armourType = aa.armourtype || "None";
+
+            this.sectionID = state.CoC2.sectionIDs[id] || "None";
+            this.sectionMarker = "";
+            
+            
+            
             TeamArray[id] = this;
             let index = HexMap[label].tokenIDs.indexOf(id);
             if (index < 0) {
@@ -1356,7 +1407,7 @@ const Main = (() => {
             nations: [],
             turn: 0,
             losLines: [],
-
+            sectionIDs: {},
         }
 
 
@@ -1488,6 +1539,104 @@ const Main = (() => {
         return true;
     }
 
+    const SetArmies = () => {
+        let tokens = findObjs({_type: "graphic",_subtype: "token",layer: "objects"});
+        let sectionMarkers = [0,0];
+
+
+        _.each(tokens,token => {
+            let character = getObj("character", token.get("represents"));   
+            if (character) {
+                let team = new Team(token.get("id"));
+                //check for nearby tokens, if so, this is a section, check if section already created, if not create, if is, can note sectionID in state
+                if (team.player < 2) {
+                    let hex = HexMap[team.hexLabel];
+                    let neighbours = hex.cube.neighbours();
+                    let others = [];
+                    let sectionID,sectionMarker;
+                    let sectionFlag = false;
+                    let neighbours = false;
+                    for (let i=0;i<neighbours.length;i++) {
+                        let hex2 = HexMap[neighbours[i].label()];
+                        if (hex2 && hex2.tokenIDs.length > 0) {
+                            neighbours = true;
+                            for (let j=0;j<hex2.tokenIDs.length;j++) {
+                                let team2 = TeamArray[hex2.tokenIDs[j]];
+                                if (team2) {
+                                    sectionID = team2.sectionID;
+                                    sectionMarker = team2.sectionMarker;
+                                    sectionFlag = true;
+                                }
+                            }
+                        }
+                    }
+                    if (sectionFlag === false && neighbours === true) {
+                        sectionID = stringGen();
+                        sectionMarker = Nations[team.nation].teammarkers[sectionMarkers[team.player]];
+                        sectionMarkers[team.player]++;
+                        team.sectionMarker = sectionMarker;
+                        state.CoC2.sectionIDs[team.id] = sectionID;
+                    }
+
+                    //naming
+                    //reset some token stuff like bubbles, aura, etc
+                    let ds = team.type === "Leader" ? true:false;
+
+                    team.token.set({
+                        "aura1_color": "#00ff00",
+                        "disableSnapping": ds,
+                        "bar1_value": team.maxHP,
+                        "bar1_max": team.maxHP,
+                        
+
+
+
+
+                    })
+
+
+
+
+
+
+                }
+
+            }
+
+
+
+
+        })
+
+
+
+
+
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     const changeGraphic = (tok,prev) => {
         let team = TeamArray[tok.id];
@@ -1557,6 +1706,9 @@ const Main = (() => {
                 break;
             case '!Roll':
                 RollDice(msg);
+                break;
+            case '!SetArmies':
+                SetArmies(msg);
                 break;
             
 
