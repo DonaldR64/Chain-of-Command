@@ -768,6 +768,11 @@ const Main = (() => {
             }
             this.maxShock = maxShock;
 
+            let weaponArray = [];
+
+            
+
+
 
 
 
