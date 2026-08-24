@@ -1783,7 +1783,10 @@ const Main = (() => {
             errorMsg.push("No Orders Left");
         }
         let parentTeam = TeamArray[Tag[2]];
-        SetupCard(parentTeam.name,"Form Scouts",parentTeam.nation);
+        if (parentTeam.nation !== leaderTeam.nation) {
+            errorMsg.push("Not Same Nation");
+        }
+        SetupCard(leaderTeam.name,"Form Scouts",leaderTeam.nation);
         let currentMen = parseInt(parentTeam.token.get("bar1_value"));
         if (currentMen <= 3) {
             errorMsg.push("Not enough men")
