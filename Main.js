@@ -770,7 +770,7 @@ const Main = (() => {
 
             let weaponArray = [];
 
-            
+
 
 
 
@@ -1421,7 +1421,8 @@ const Main = (() => {
             nations: [],
             turn: 0,
             losLines: [],
-            sectionIDs: {},
+            sectionIDs: {}, //ref by teamID - shows the sectionID
+            sectionMarkers: {}, //ref by sectionID - shows the marker
         }
 
 
@@ -1700,6 +1701,7 @@ const Main = (() => {
             if (group.length > 1 && refTeam.player < 2) {
                 sectionID = stringGen();
                 sectionMarker = Nations[refTeam.nation].teammarkers[refTeam.player];
+                state.CoC2.sectionMarkers[sectionID] = sectionMarker;
             };
             for (let j=0;j<group.length;j++) {
                 let team = TeamArray[group[j]];
