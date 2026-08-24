@@ -134,6 +134,7 @@ const Main = (() => {
             "overwatch": "",
             "covering": "",
             "teammarkers": ["letters_and_numbers0050::4815186","letters_and_numbers0051::4815187","letters_and_numbers0052::4815188","letters_and_numbers0053::4815189","letters_and_numbers0054::4815190","letters_and_numbers0055::4815191","letters_and_numbers0056::4815192","letters_and_numbers0057::4815193","letters_and_numbers0058::4815194","letters_and_numbers0059::4815195"],
+            "scouts": "-P-oD8_2dgCGY0wMiXQa",
         },
 
 
@@ -750,6 +751,8 @@ const Main = (() => {
             this.quality = aa.quality;
             this.leaderType = aa.leadertype || "None";
             let maxShock = 0;
+            this.formScouts = aa.scouts === "1" ? true:false;
+            this.isScout = (this.type === "Infantry" && this.name.includes("Scout")) ? true:false;
 
             this.special = aa.special;
             this.speed = aa.speed || "Foot";
@@ -860,6 +863,15 @@ const Main = (() => {
         } 
         AddAbility("Info","!TokenInfo",team.charID);
         AddAbility("LOS","!CheckLOS;@{selected|token_id};@{target|token_id}",team.charID);
+
+        if (team.type === "Leader") {
+            AddAbility("Form Scouts","!FormScouts;@{selected|token_id};@{target|token_id}",team.charID);
+        }
+
+        if (team.isScout) {
+            AddAbility("Reform","!Reform;@{selected|token_id};@{target|token_id}",team.charID);
+        }
+
 
 
 
@@ -1760,9 +1772,107 @@ const Main = (() => {
     }
 
 
+    const FormScouts = (msg) => {
+        let Tag = msg.content.split(";");
+//leader orders check and decrement
+        let leaderTeam = TeamArray[Tag[1]];
+        let errorMsg = [];
+
+        let orders = parseInt(leaderTeam.token.get("bar2_value"));
+        if (orders === 0) {
+            errorMsg.push("No Orders Left");
+        }
+        let parentTeam = TeamArray[Tag[2]];
+        SetupCard(parentTeam.name,"Form Scouts",parentTeam.nation);
+        let currentMen = parseInt(parentTeam.token.get("bar1_value"));
+        if (currentMen <= 3) {
+            errorMsg.push("Not enough men")
+        }
+        if (parentTeam.formScouts === false) {
+            errorMsg.push("Target Unit Cannot form a Scout Team")
+        }
+        if (ErrorMsg(errorMsg)) {
+            PrintCard();
+            return;
+        }
+
+        orders--;
+        leaderTeam.token.set("bar2_value",orders);
 
 
+        let scoutCharID = Nations[parentTeam.nation].scouts;
+        let neighbourCubes = HexMap[parentTeam.hexLabel].cube.neighbours();
+        let adjHex = HexMap[parentTeam.hexLabel]; //default
+        for (let i=0;i<neighbourCubes.length;i++) {
+            let hex = HexMap[neighbourCubes[i].label()];
+            if (hex.tokenIDs.length === 0) {
+                adjHex = hex;
+                break;
+            }
+        }
+        let scoutToken = summonToken(scoutCharID,adjHex.centre.x, adjHex.centre.y,256,0,"objects",true);
+        parentTeam.token.set("bar1_value",(currentMen - 2));
+        let scoutTeam = new Team(scoutToken.id);
+        let name = scoutTeam.charName.split(",")[0].trim();
+        scoutTeam.token.set({
+            name: name,
+            bar1_value: 2,
+            bar1_max: 2,
+            showplayers_bar1: true,
+            bar2_value: "",
+            bar2_max: "",
+            showplayers_bar2: true,
+            bar3_value: 0,
+            bar3_max: scoutTeam.maxShock,
+            showplayers_bar3: true,
+            bar_location: "overlap_bottom",
+            compact_bar: "compact",
+            aura1_color: "#00ff00",
+            aura1_radius: 0.1,
+            aura2_color: "transparent",
+            showplayers_aura1: true,
+            tooltip: "",
+            show_tooltip: true,
+            showplayers_tooltip: true,
+            showplayers_name: true,
+            statusmarkers: "",
+            tint_color: "transparent",
+            disableSnapping: false,
+        })
+        scoutTeam.isScout = true;
+        scoutTeam.sectionID = parentTeam.sectionID;
+        state.CoC2.sectionIDs[scoutTeam.id] = parentTeam.sectionID;
+        scoutTeam.token.set("status_" + state.CoC2.sectionMarkers[parentTeam.sectionID],true);
+        AddAbilities(scoutTeam);
+        outputCard.body.push("Scout Team Formed")
+        outputCard.body.push("Remaining Orders: " + orders);
+        PrintCard();
+    }
 
+    const Reform = (msg) => {
+        let Tag = msg.content.split(";")
+        let scoutTeam = TeamArray[Tag[1]];
+        let targetTeam = TeamArray[Tag[2]];
+        let errorMsg = [];
+        SetupCard(scoutTeam.name,"Reform",scoutTeam.nation);
+        if (scoutTeam.sectionID !== targetTeam.sectionID) {
+            errorMsg.push("Not Parent Unit");
+        }
+        if (scoutTeam.Distance(targetTeam) > 1) {
+            errorMsg.push("Need to be adjacent");
+        }
+        if (ErrorMsg(errorMsg)) {
+            PrintCard();
+            return;
+        }
+        let targetMen = parseInt(targetTeam.token.get("bar1_value"));
+        let scoutMen = parseInt(scoutTeam.token.get("bar1_value"));
+        targetMen += scoutMen
+        targetTeam.token.set("bar1_value",targetMen);
+        scoutTeam.token.remove();
+        outputCard.body.push("Rejoined Parent Unit");
+        PrintCard();
+    }
 
 
 
@@ -1857,8 +1967,12 @@ const Main = (() => {
             case '!SetArmies':
                 SetArmies(msg);
                 break;
-            
-
+            case '!FormScouts':
+                FormScouts(msg);
+                break;
+            case '!Reform':
+                Reform(msg);
+                break;
 
 
 
