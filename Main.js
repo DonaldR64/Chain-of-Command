@@ -1753,6 +1753,7 @@ const Main = (() => {
                     tint_color: "transparent",
                     disableSnapping: ds,
                 })
+                team.name = name;
                 team.sectionID = sectionID;
                 if (sectionMarker !== "None") {
                     team.token.set("status_" + sectionMarker,true);
@@ -1842,6 +1843,7 @@ const Main = (() => {
             tint_color: "transparent",
             disableSnapping: false,
         })
+        scoutTeam.name = name;
         scoutTeam.isScout = true;
         scoutTeam.sectionID = parentTeam.sectionID;
         state.CoC2.sectionIDs[scoutTeam.id] = parentTeam.sectionID;
@@ -1870,8 +1872,16 @@ const Main = (() => {
         }
         let targetMen = parseInt(targetTeam.token.get("bar1_value"));
         let scoutMen = parseInt(scoutTeam.token.get("bar1_value"));
-        targetMen += scoutMen
+        targetMen += scoutMen;
         targetTeam.token.set("bar1_value",targetMen);
+
+        let targetShock = parseInt(targetTeam.token.get("bar3_value"));
+        let scoutSchock = parseInt(scoutTeam.token.get("bar3_value"));
+        targetShock += scoutSchock;
+        targetTeam.token.set("bar3_value",targetShock);
+
+//check for pinned for targetTeam
+
         scoutTeam.token.remove();
         outputCard.body.push("Rejoined Parent Unit");
         PrintCard();
